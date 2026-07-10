@@ -3,150 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apex Academy - Portal</title>
+    <title>Apex Academy - Examination Portal</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Firebase CDN -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif:wght@700&display=swap" rel="stylesheet">
     
     <script>
-        tailwind.config = { theme: { extend: { colors: { govblue: '#1E3A8A', govdarkblue: '#111827', govorange: '#EA580C', govgreen: '#166534' } } } }
+        tailwind.config = { 
+            theme: { 
+                extend: { 
+                    colors: { 
+                        govblue: '#1E3A8A', 
+                        govdarkblue: '#111827', 
+                        govorange: '#EA580C', 
+                        govgreen: '#166534' 
+                    } 
+                } 
+            } 
+        }
     </script>
     <style>
-        body { font-family: 'Poppins', sans-serif; background-color: #F3F4F6; color: #1F2937; }
+        body { font-family: 'Inter', sans-serif; background-color: #F3F4F6; color: #1F2937; }
+        
+        /* View Transitions */
         .view-section { display: none; animation: fadeIn 0.3s ease-in-out; }
         .view-section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
-        .glass-modal { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
-        .official-card { background: #ffffff; border: 1px solid #E5E7EB; border-top: 4px solid #1E3A8A; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border-radius: 8px;}
-        .official-input { border: 1px solid #D1D5DB; border-radius: 6px; padding: 10px 14px; width: 100%; outline: none; transition: all 0.2s; background: #F9FAFB;}
+        /* Official UI Components */
+        .glass-modal { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); }
+        .official-card { background: #ffffff; border: 1px solid #E5E7EB; border-top: 4px solid #1E3A8A; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border-radius: 6px;}
+        .official-input { border: 1px solid #CBD5E1; border-radius: 4px; padding: 10px 14px; width: 100%; outline: none; transition: all 0.2s; background: #F8FAFC;}
         .official-input:focus { border-color: #1E3A8A; box-shadow: 0 0 0 3px rgba(30,58,138,0.1); background: #fff;}
-        .btn-primary { background: #1E3A8A; color: white; padding: 10px 16px; border-radius: 6px; font-weight: 600; transition: 0.2s; }
-        .btn-primary:hover { background: #1E40AF; transform: translateY(-1px); }
+        .btn-primary { background: #1E3A8A; color: white; padding: 10px 16px; border-radius: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; transition: 0.2s; }
+        .btn-primary:hover { background: #172554; }
+        
+        /* Teacher Dashboard Tabs */
         .dash-tab { display: none; }
         .dash-tab.active { display: block; }
-        .tab-btn.active { border-bottom: 3px solid #1E3A8A; color: #1E3A8A; font-weight: 700; }
+        .tab-btn { border-bottom: 3px solid transparent; }
+        .tab-btn.active { border-bottom: 3px solid #1E3A8A; color: #1E3A8A; font-weight: 700; background: #F3F4F6;}
         
+        /* Custom Scrollbar for Chat/Notices */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+
+        /* Print CSS for Marksheet */
         @media print {
             body { background: white; }
             .no-print { display: none !important; }
             .official-card { border: none !important; box-shadow: none !important; margin: 0; padding: 0;}
-            .print-border { border: 2px solid #111; padding: 30px; outline: 6px double #111; outline-offset: -12px; height: 95vh;}
-            header, .ticker-wrap, .anti-hack { display: none; }
+            .print-border { border: 2px solid #111; padding: 30px; outline: 4px double #111; outline-offset: -8px; min-height: 95vh; }
+            header, .anti-hack, footer { display: none; }
         }
         
-        .chat-box { max-height: 300px; overflow-y: auto; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+        .cert-font { font-family: 'Noto Serif', serif; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <div class="anti-hack bg-red-600 text-white text-xs font-bold py-1 px-4 overflow-hidden shadow-md">
+    <!-- Security Warning -->
+    <div class="anti-hack bg-red-600 text-white text-xs font-bold py-1.5 px-4 overflow-hidden shadow-md">
         <marquee behavior="scroll" direction="left" scrollamount="6">
             ⚠️ WARNING: UNAUTHORIZED ACCESS, DATA MANIPULATION, OR HACKING ATTEMPTS ARE STRICTLY MONITORED. VIOLATORS WILL BE SUSPENDED AND REPORTED TO CYBER AUTHORITIES IMMEDIATELY. ⚠️
         </marquee>
     </div>
 
-    <!-- Header -->
-    <header class="bg-govdarkblue text-white shadow-lg sticky top-0 z-40">
+    <!-- Official Header -->
+    <header class="bg-govdarkblue text-white shadow-lg sticky top-0 z-40 border-b-4 border-govblue">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-3 cursor-pointer" onclick="showView('home-view')">
-                <div class="bg-white text-govdarkblue p-2 rounded-lg"><i class="fa-solid fa-book-open-reader text-xl"></i></div>
+            <div class="flex items-center gap-4 cursor-pointer" onclick="showView('home-view')">
+                <div class="bg-white text-govdarkblue p-2 rounded-lg shadow-inner"><i class="fa-solid fa-book-open-reader text-2xl"></i></div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-wider">APEX ACADEMY</h1>
-                    <p class="text-xs text-gray-400">Excellence in Education</p>
+                    <h1 class="text-2xl font-bold tracking-wider uppercase cert-font">APEX ACADEMY</h1>
+                    <p class="text-xs text-blue-200 tracking-widest uppercase">Excellence in Education</p>
                 </div>
             </div>
             <div class="flex items-center gap-3 no-print">
-                <span id="db-status" class="text-xs bg-gray-700 px-2 py-1 rounded font-mono">Connecting...</span>
-                <button id="logout-btn" class="hidden text-sm bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-bold shadow transition" onclick="logout()">Logout</button>
+                <span id="db-status" class="text-xs bg-gray-700 px-3 py-1.5 rounded font-mono border border-gray-600">Connecting...</span>
+                <button id="logout-btn" class="hidden text-sm bg-red-600 hover:bg-red-700 px-4 py-2 rounded font-bold shadow transition" onclick="logout()">LOGOUT</button>
             </div>
         </div>
     </header>
 
-    <div id="custom-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
-        <div class="glass-modal rounded-xl w-full max-w-sm p-6 transform scale-95 transition-transform" id="modal-content">
-            <div class="text-center mb-4" id="modal-icon"></div>
-            <h3 class="text-xl font-bold text-center mb-2" id="modal-title">Title</h3>
-            <p class="text-gray-600 text-center mb-6 text-sm" id="modal-msg">Message goes here.</p>
+    <!-- Global Modal System -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="glass-modal rounded-xl w-full max-w-sm p-6 transform transition-transform text-center" id="modal-content">
+            <div class="mb-4" id="modal-icon"></div>
+            <h3 class="text-xl font-bold mb-2 text-gray-800" id="modal-title">Title</h3>
+            <p class="text-gray-600 mb-6 text-sm" id="modal-msg">Message goes here.</p>
             <div class="flex gap-3 justify-center" id="modal-actions">
-                <button onclick="closeModal()" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg font-bold hover:bg-gray-300">Close</button>
+                <button onclick="closeModal()" class="bg-gray-200 text-gray-800 px-6 py-2 rounded font-bold hover:bg-gray-300">Close</button>
             </div>
         </div>
     </div>
 
-    <!-- Main Content -->
+    <!-- Main Workspace -->
     <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6">
 
         <!-- ========================================== -->
-        <!-- 1. HOME VIEW (Dashboard for Students) -->
+        <!-- 1. HOME VIEW (Student & Info Portal)       -->
         <!-- ========================================== -->
         <div id="home-view" class="view-section active w-full">
+            
             <div class="grid lg:grid-cols-3 gap-6">
-                <!-- Left Col: Actions -->
+                
+                <!-- LEFT COLUMN: Main Portals -->
                 <div class="lg:col-span-2 space-y-6">
+                    <!-- Login Portals -->
                     <div class="official-card p-8">
-                        <h2 class="text-2xl font-bold text-govblue mb-6 border-b pb-3">Welcome to the Student Portal</h2>
+                        <h2 class="text-xl font-bold text-govblue mb-6 border-b pb-3 uppercase"><i class="fa-solid fa-server mr-2"></i> Academic Portals</h2>
                         <div class="grid sm:grid-cols-2 gap-6">
-                            <div class="border border-gray-200 rounded-xl p-6 text-center hover:shadow-xl transition bg-white cursor-pointer group" onclick="showView('student-search-view')">
-                                <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-600 group-hover:text-white transition text-blue-600 text-2xl">
+                            <!-- Candidate Login -->
+                            <div class="border border-gray-200 rounded-lg p-6 text-center hover:shadow-md transition bg-gray-50 cursor-pointer group" onclick="showView('student-search-view')">
+                                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-600 group-hover:text-white transition text-blue-700 text-2xl shadow-inner">
                                     <i class="fa-solid fa-id-card"></i>
                                 </div>
-                                <h3 class="font-bold mb-2">Check Result</h3>
-                                <p class="text-xs text-gray-500">View and download marksheet</p>
+                                <h3 class="font-bold mb-1 text-gray-800 uppercase">Check Result</h3>
+                                <p class="text-xs text-gray-500">View & Download Marksheet</p>
                             </div>
-                            <div class="border border-gray-200 rounded-xl p-6 text-center hover:shadow-xl transition bg-white cursor-pointer group" onclick="showView('teacher-login-view')">
-                                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-gray-800 group-hover:text-white transition text-gray-700 text-2xl">
+                            <!-- Faculty Login -->
+                            <div class="border border-gray-200 rounded-lg p-6 text-center hover:shadow-md transition bg-gray-50 cursor-pointer group" onclick="showView('teacher-login-view')">
+                                <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-gray-800 group-hover:text-white transition text-gray-700 text-2xl shadow-inner">
                                     <i class="fa-solid fa-user-tie"></i>
                                 </div>
-                                <h3 class="font-bold mb-2">Faculty Login</h3>
-                                <p class="text-xs text-gray-500">Authorized personnel only</p>
+                                <h3 class="font-bold mb-1 text-gray-800 uppercase">Faculty Login</h3>
+                                <p class="text-xs text-gray-500">Authorized Personnel Only</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Help Desk -->
+                    <!-- Help Desk Widget -->
                     <div class="official-card p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-lg"><i class="fa-solid fa-headset text-govblue mr-2"></i>Help Desk & Support</h3>
-                            <button onclick="document.getElementById('ticket-modal').classList.remove('hidden')" class="text-xs bg-govblue text-white px-3 py-1 rounded">Raise Case</button>
+                        <div class="flex justify-between items-center mb-4 border-b pb-2">
+                            <h3 class="font-bold text-gray-800 uppercase"><i class="fa-solid fa-headset text-govblue mr-2"></i>Support & Tickets</h3>
+                            <button onclick="document.getElementById('ticket-modal').classList.remove('hidden')" class="text-xs bg-govblue hover:bg-govdarkblue text-white px-3 py-1.5 rounded font-bold transition">Raise Case</button>
                         </div>
-                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                            <p class="text-xs font-bold text-gray-600 mb-2">CHECK TICKET STATUS</p>
-                            <div class="flex gap-2">
-                                <input type="text" id="check-ticket-id" class="official-input !py-2 text-sm" placeholder="Enter Ticket ID (e.g. TKT123)">
-                                <button onclick="checkTicket()" class="btn-primary !py-2"><i class="fa-solid fa-search"></i></button>
-                            </div>
-                            <div id="ticket-result" class="mt-3 text-sm hidden p-3 rounded"></div>
+                        <div class="flex gap-2">
+                            <input type="text" id="check-ticket-id" class="official-input !py-2 text-sm" placeholder="Enter Ticket ID (e.g. TKT123)">
+                            <button onclick="checkTicket()" class="btn-primary !py-2"><i class="fa-solid fa-search"></i></button>
                         </div>
+                        <div id="ticket-result" class="mt-3 text-sm hidden p-3 rounded border"></div>
                     </div>
                 </div>
 
-                <!-- Right Col: Notices & Chat -->
+                <!-- RIGHT COLUMN: Notices & Chat -->
                 <div class="space-y-6">
-                    <!-- Notice Board -->
-                    <div class="official-card p-0 overflow-hidden flex flex-col h-72">
-                        <h3 class="font-bold bg-govblue text-white p-3"><i class="fa-solid fa-bell mr-2"></i>Notice Board</h3>
-                        <div id="public-notice-board" class="p-4 overflow-y-auto custom-scrollbar flex-grow bg-gray-50 space-y-3">
-                            <!-- Notices injected here -->
+                    
+                    <!-- Official Notice Board -->
+                    <div class="official-card p-0 flex flex-col h-72">
+                        <h3 class="font-bold bg-gray-100 text-gray-800 p-3 border-b uppercase text-sm"><i class="fa-solid fa-bullhorn text-govorange mr-2"></i>Notice Board</h3>
+                        <div id="public-notice-board" class="p-3 overflow-y-auto custom-scrollbar flex-grow bg-white space-y-2">
+                            <!-- Notices rendered here -->
                         </div>
                     </div>
 
                     <!-- Community Chat -->
-                    <div class="official-card p-0 overflow-hidden flex flex-col h-80">
-                        <h3 class="font-bold bg-govblue text-white p-3 flex justify-between">
-                            <span><i class="fa-solid fa-comments mr-2"></i>Community</span>
-                            <span class="text-xs bg-white/20 px-2 py-0.5 rounded">Live</span>
+                    <div class="official-card p-0 flex flex-col h-80">
+                        <h3 class="font-bold bg-gray-100 text-gray-800 p-3 border-b flex justify-between uppercase text-sm">
+                            <span><i class="fa-solid fa-comments text-govgreen mr-2"></i>Community Chat</span>
+                            <span class="text-[10px] bg-green-100 text-green-800 px-2 py-0.5 rounded-full border border-green-300 flex items-center"><span class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1 animate-pulse"></span>LIVE</span>
                         </h3>
                         <div id="chat-container" class="p-3 overflow-y-auto custom-scrollbar flex-grow bg-white space-y-3 text-sm">
-                            <!-- Chat injected here -->
+                            <!-- Chat rendered here -->
                         </div>
-                        <div class="p-2 bg-gray-100 border-t flex gap-2">
-                            <input type="text" id="chat-name" class="official-input !py-1 !px-2 w-1/3 text-xs" placeholder="Name">
-                            <input type="text" id="chat-msg" class="official-input !py-1 !px-2 w-2/3 text-xs" placeholder="Message..." onkeypress="if(event.key==='Enter') sendChat()">
+                        <div class="p-2 bg-gray-50 border-t flex gap-2">
+                            <input type="text" id="chat-name" class="official-input !py-1.5 !px-2 w-1/3 text-xs" placeholder="Name">
+                            <input type="text" id="chat-msg" class="official-input !py-1.5 !px-2 w-2/3 text-xs" placeholder="Message..." onkeypress="if(event.key==='Enter') sendChat()">
                             <button onclick="sendChat()" class="text-govblue hover:text-govdarkblue px-2"><i class="fa-solid fa-paper-plane"></i></button>
                         </div>
                     </div>
@@ -155,80 +185,102 @@
         </div>
 
         <!-- ========================================== -->
-        <!-- 2. TEACHER LOGIN -->
+        <!-- 2. TEACHER LOGIN                           -->
         <!-- ========================================== -->
         <div id="teacher-login-view" class="view-section w-full max-w-md mx-auto">
-            <div class="official-card p-8 relative">
-                <button onclick="showView('home-view')" class="absolute top-4 left-4 text-gray-400 hover:text-gray-800"><i class="fa-solid fa-arrow-left"></i></button>
-                <div class="text-center mb-6 mt-4">
-                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl text-gray-700"><i class="fa-solid fa-lock"></i></div>
-                    <h2 class="text-2xl font-bold">Faculty Sign In</h2>
+            <div class="official-card p-8">
+                <button onclick="showView('home-view')" class="text-govblue hover:underline mb-6 text-sm font-bold"><i class="fa-solid fa-arrow-left mr-1"></i> BACK TO HOME</button>
+                <div class="text-center mb-6 border-b pb-4">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 border border-gray-200 text-gray-600"><i class="fa-solid fa-lock text-2xl"></i></div>
+                    <h2 class="text-xl font-bold text-gray-800 uppercase">Authorized Login</h2>
                 </div>
                 <div class="space-y-4">
-                    <input type="text" id="t-user" class="official-input" placeholder="User ID">
-                    <input type="password" id="t-pass" class="official-input" placeholder="Password">
-                    <button onclick="handleLogin()" class="btn-primary w-full">Authenticate</button>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Faculty ID</label>
+                        <input type="text" id="t-user" class="official-input" placeholder="Enter ID">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Secure Password</label>
+                        <input type="password" id="t-pass" class="official-input" placeholder="Enter Password">
+                    </div>
+                    <button onclick="handleLogin()" class="btn-primary w-full mt-2">Sign In</button>
                 </div>
+                <p class="text-[10px] text-center text-gray-400 mt-6 uppercase">*IP Address Logged for Security</p>
             </div>
         </div>
 
         <!-- ========================================== -->
-        <!-- 3. TEACHER DASHBOARD (Tabs) -->
+        <!-- 3. TEACHER DASHBOARD (Tabbed Interface)    -->
         <!-- ========================================== -->
         <div id="teacher-dashboard-view" class="view-section w-full">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-                <div class="flex overflow-x-auto custom-scrollbar border-b">
-                    <button onclick="switchTab('tab-upload')" class="tab-btn active px-6 py-4 text-sm font-semibold text-gray-500 hover:text-govblue whitespace-nowrap"><i class="fa-solid fa-upload mr-2"></i>Upload Result</button>
-                    <button onclick="switchTab('tab-db')" class="tab-btn px-6 py-4 text-sm font-semibold text-gray-500 hover:text-govblue whitespace-nowrap"><i class="fa-solid fa-database mr-2"></i>Database</button>
-                    <button onclick="switchTab('tab-notices')" class="tab-btn px-6 py-4 text-sm font-semibold text-gray-500 hover:text-govblue whitespace-nowrap"><i class="fa-solid fa-bullhorn mr-2"></i>Notice Board</button>
-                    <button onclick="switchTab('tab-requests')" class="tab-btn px-6 py-4 text-sm font-semibold text-gray-500 hover:text-govblue whitespace-nowrap"><i class="fa-solid fa-envelope-open-text mr-2"></i>Requests & Cases</button>
-                    <button onclick="switchTab('tab-settings')" class="tab-btn px-6 py-4 text-sm font-semibold text-gray-500 hover:text-govblue whitespace-nowrap"><i class="fa-solid fa-gear mr-2"></i>Settings</button>
+            
+            <div class="flex justify-between items-end mb-4 border-b-2 border-govblue pb-2">
+                <h2 class="text-2xl font-bold text-gray-800 uppercase">Administrator Console</h2>
+            </div>
+
+            <div class="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden mb-6">
+                <!-- Dashboard Navigation -->
+                <div class="flex overflow-x-auto custom-scrollbar border-b bg-gray-50">
+                    <button onclick="switchTab('tab-upload')" class="tab-btn active px-6 py-3 text-sm font-semibold text-gray-600 hover:text-govblue whitespace-nowrap"><i class="fa-solid fa-file-pen mr-2"></i>Upload Result</button>
+                    <button onclick="switchTab('tab-db')" class="tab-btn px-6 py-3 text-sm font-semibold text-gray-600 hover:text-govblue whitespace-nowrap"><i class="fa-solid fa-database mr-2"></i>Master Database</button>
+                    <button onclick="switchTab('tab-notices')" class="tab-btn px-6 py-3 text-sm font-semibold text-gray-600 hover:text-govblue whitespace-nowrap"><i class="fa-solid fa-bullhorn mr-2"></i>Notice Board</button>
+                    <button onclick="switchTab('tab-requests')" class="tab-btn px-6 py-3 text-sm font-semibold text-gray-600 hover:text-govblue whitespace-nowrap"><i class="fa-solid fa-headset mr-2"></i>Cases & Challenges</button>
+                    <button onclick="switchTab('tab-settings')" class="tab-btn px-6 py-3 text-sm font-semibold text-gray-600 hover:text-govblue whitespace-nowrap"><i class="fa-solid fa-gear mr-2"></i>Settings</button>
                 </div>
 
-                <div class="p-6 bg-gray-50">
-                    <!-- Tab 1: Upload Result -->
+                <div class="p-6">
+                    
+                    <!-- TAB 1: Upload Result (Theory + Practical) -->
                     <div id="tab-upload" class="dash-tab active">
                         <div class="grid md:grid-cols-3 gap-6">
+                            <!-- Manage Subjects -->
                             <div class="official-card p-5">
-                                <h3 class="font-bold text-sm text-gray-500 uppercase mb-3">1. Add Subjects</h3>
+                                <h3 class="font-bold text-xs text-gray-500 uppercase mb-3 border-b pb-1">1. Configure Subjects</h3>
                                 <div class="flex gap-2 mb-3">
-                                    <input type="text" id="new-subject" class="official-input !py-1" placeholder="Subject Name">
-                                    <button onclick="addSubject()" class="bg-govdarkblue text-white px-3 rounded"><i class="fa-solid fa-plus"></i></button>
+                                    <input type="text" id="new-subject" class="official-input !py-1.5" placeholder="Subject Name">
+                                    <button onclick="addSubject()" class="bg-gray-800 text-white px-3 rounded font-bold"><i class="fa-solid fa-plus"></i></button>
                                 </div>
                                 <div id="subject-list" class="flex flex-wrap gap-2 text-xs"></div>
                             </div>
+                            
+                            <!-- Upload Data -->
                             <div class="md:col-span-2 official-card p-5">
-                                <h3 class="font-bold text-sm text-gray-500 uppercase mb-4">2. Enter Candidate Data</h3>
+                                <h3 class="font-bold text-xs text-gray-500 uppercase mb-4 border-b pb-1">2. Enter Candidate Data</h3>
                                 <div class="grid md:grid-cols-2 gap-4 mb-4">
                                     <input type="number" id="s-roll" class="official-input" placeholder="Roll Number" required>
                                     <input type="text" id="s-name" class="official-input" placeholder="Candidate Name" required>
                                 </div>
-                                <div class="bg-white border rounded-lg p-4 mb-4">
-                                    <div class="grid grid-cols-12 gap-2 text-xs font-bold text-gray-500 uppercase mb-2 px-2">
+                                
+                                <!-- Marks Table -->
+                                <div class="bg-gray-50 border border-gray-200 rounded-md p-4 mb-4">
+                                    <div class="grid grid-cols-12 gap-2 text-[10px] font-bold text-gray-500 uppercase mb-2 px-2 border-b pb-2">
                                         <div class="col-span-6">Subject</div>
                                         <div class="col-span-3 text-center">Theory (70)</div>
-                                        <div class="col-span-3 text-center">Prac (30)</div>
+                                        <div class="col-span-3 text-center">Practical (30)</div>
                                     </div>
-                                    <div id="marks-inputs-container" class="space-y-2"></div>
+                                    <div id="marks-inputs-container" class="space-y-2">
+                                        <!-- Inputs loop generated here -->
+                                    </div>
                                 </div>
+                                
                                 <div class="grid md:grid-cols-2 gap-4">
                                     <div>
                                         <label class="text-xs font-bold text-gray-500 uppercase">Moderation (Grace Marks)</label>
                                         <input type="number" id="s-mod" class="official-input mt-1" placeholder="+/- Marks" value="0">
                                     </div>
                                     <div>
-                                        <label class="text-xs font-bold text-gray-500 uppercase">Remarks</label>
+                                        <label class="text-xs font-bold text-gray-500 uppercase">Official Remarks</label>
                                         <input type="text" id="s-remarks" class="official-input mt-1" placeholder="Optional">
                                     </div>
                                 </div>
-                                <button onclick="saveStudent()" class="btn-primary w-full mt-4"><i class="fa-solid fa-floppy-disk mr-2"></i>Save Record</button>
+                                <button onclick="saveStudent()" class="btn-primary w-full mt-6 bg-govgreen hover:bg-green-800"><i class="fa-solid fa-floppy-disk mr-2"></i>Save Record</button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Tab 2: Database -->
+                    <!-- TAB 2: Database -->
                     <div id="tab-db" class="dash-tab">
-                        <div class="official-card p-0 overflow-x-auto">
+                        <div class="border rounded-md overflow-x-auto">
                             <table class="w-full text-left text-sm whitespace-nowrap">
                                 <thead class="bg-gray-100 border-b">
                                     <tr>
@@ -237,7 +289,7 @@
                                         <th class="p-3 text-center">Total</th>
                                         <th class="p-3 text-center">%</th>
                                         <th class="p-3 text-center">Status</th>
-                                        <th class="p-3 text-right">Actions</th>
+                                        <th class="p-3 text-right">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="student-table-body" class="divide-y bg-white"></tbody>
@@ -245,154 +297,164 @@
                         </div>
                     </div>
 
-                    <!-- Tab 3: Notices & Uploads -->
+                    <!-- TAB 3: Notices (Base64 PDF Upload) -->
                     <div id="tab-notices" class="dash-tab">
                         <div class="grid md:grid-cols-2 gap-6">
-                            <div class="official-card">
-                                <div class="bg-govblue text-white p-3 font-bold rounded-t-lg"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>Direct File Upload</div>
-                                <div class="p-5">
-                                    <p class="text-xs text-gray-500 mb-4">Select a PDF or Image. It will be converted and saved directly to the database. (Max 2MB)</p>
-                                    <input type="text" id="notice-title" class="official-input mb-3" placeholder="Notice Title (e.g., Exam Schedule)">
-                                    <input type="file" id="notice-file" accept=".pdf, image/*" class="official-input bg-white mb-4 text-sm p-2">
-                                    <button id="upload-notice-btn" onclick="uploadDirectNotice()" class="btn-primary w-full"><i class="fa-solid fa-upload mr-2"></i>Upload to Notice Board</button>
-                                </div>
+                            <div class="official-card p-5">
+                                <h3 class="font-bold border-b pb-2 mb-4 text-gray-700 uppercase text-sm"><i class="fa-solid fa-file-pdf text-red-500 mr-2"></i>Upload Notice (PDF/Image)</h3>
+                                <p class="text-xs text-gray-500 mb-4">Select a file (Max 2MB). It will be stored directly in the database.</p>
+                                
+                                <input type="text" id="notice-title" class="official-input mb-3" placeholder="Notice Title (e.g. Exam Schedule)">
+                                <input type="file" id="notice-file" accept=".pdf, image/*" class="official-input bg-white mb-4 text-sm py-2">
+                                
+                                <button id="upload-notice-btn" onclick="uploadDirectNotice()" class="btn-primary w-full"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>Upload to Portal</button>
                             </div>
                             <div class="official-card p-0">
-                                <h3 class="bg-gray-100 p-3 font-bold border-b text-sm"><i class="fa-solid fa-list mr-2"></i>Manage Notices</h3>
+                                <h3 class="bg-gray-100 p-3 font-bold border-b text-sm text-gray-700 uppercase"><i class="fa-solid fa-list mr-2"></i>Active Notices</h3>
                                 <div id="admin-notice-list" class="p-3 space-y-2 overflow-y-auto max-h-64 bg-white"></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Tab 4: Requests -->
+                    <!-- TAB 4: Cases & Challenges -->
                     <div id="tab-requests" class="dash-tab">
                         <div class="grid md:grid-cols-2 gap-6">
-                            <!-- Challenge Results -->
-                            <div class="official-card p-0">
-                                <h3 class="bg-govorange text-white p-3 font-bold"><i class="fa-solid fa-scale-balanced mr-2"></i>Re-evaluation Requests</h3>
+                            <div class="official-card p-0 border-t-4 border-govorange">
+                                <h3 class="bg-gray-50 p-3 font-bold border-b text-sm uppercase text-gray-800"><i class="fa-solid fa-scale-balanced text-govorange mr-2"></i>Re-evaluation Requests</h3>
                                 <div class="p-3 space-y-3 bg-white min-h-[200px]" id="challenge-list"></div>
                             </div>
-                            <!-- Support Tickets -->
-                            <div class="official-card p-0">
-                                <h3 class="bg-gray-800 text-white p-3 font-bold"><i class="fa-solid fa-headset mr-2"></i>Student Support Tickets</h3>
+                            <div class="official-card p-0 border-t-4 border-gray-800">
+                                <h3 class="bg-gray-50 p-3 font-bold border-b text-sm uppercase text-gray-800"><i class="fa-solid fa-ticket text-gray-600 mr-2"></i>Support Tickets</h3>
                                 <div class="p-3 space-y-3 bg-white min-h-[200px]" id="admin-ticket-list"></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Tab 5: Settings -->
+                    <!-- TAB 5: Settings -->
                     <div id="tab-settings" class="dash-tab">
                         <div class="grid md:grid-cols-2 gap-6">
                             <div class="official-card p-5 space-y-4">
-                                <h3 class="font-bold border-b pb-2"><i class="fa-solid fa-sliders mr-2"></i>System Controls</h3>
-                                <div class="flex items-center justify-between p-3 bg-gray-50 border rounded">
-                                    <span class="font-bold text-sm">Student Result Portal</span>
-                                    <button id="toggle-portal-btn" onclick="togglePortal()" class="px-4 py-1 rounded font-bold text-sm text-white bg-green-600">ACTIVE</button>
+                                <h3 class="font-bold border-b pb-2 text-gray-700 uppercase text-sm"><i class="fa-solid fa-sliders text-govblue mr-2"></i>System Controls</h3>
+                                <div class="flex items-center justify-between p-3 bg-gray-50 border rounded-md">
+                                    <span class="font-bold text-sm">Public Result Portal</span>
+                                    <button id="toggle-portal-btn" onclick="togglePortal()" class="px-4 py-1.5 rounded font-bold text-xs text-white bg-green-600 uppercase tracking-wider">ONLINE</button>
                                 </div>
                                 <div>
                                     <label class="text-xs font-bold text-gray-500 uppercase">Institution Location</label>
                                     <input type="text" id="set-location" class="official-input mt-1 text-sm" placeholder="e.g. New Delhi">
                                 </div>
                                 <div>
-                                    <label class="text-xs font-bold text-gray-500 uppercase">Principal Signature (Image URL)</label>
-                                    <input type="text" id="set-sign" class="official-input mt-1 text-sm" placeholder="https://...">
+                                    <label class="text-xs font-bold text-gray-500 uppercase">Auth Signature URL</label>
+                                    <input type="text" id="set-sign" class="official-input mt-1 text-sm" placeholder="https://image-link.png">
                                 </div>
                                 <div>
-                                    <label class="text-xs font-bold text-gray-500 uppercase">Re-evaluation Fee (₹)</label>
+                                    <label class="text-xs font-bold text-gray-500 uppercase">Re-eval Fee (₹)</label>
                                     <input type="number" id="set-fee" class="official-input mt-1 text-sm">
                                 </div>
-                                <button onclick="saveSettings()" class="btn-primary w-full text-sm">Save Configuration</button>
+                                <button onclick="saveSettings()" class="btn-primary w-full mt-2">Save Configuration</button>
                             </div>
+                            
                             <div class="official-card p-5">
-                                <h3 class="font-bold border-b pb-2 mb-4"><i class="fa-solid fa-users-gear mr-2"></i>Faculty Access Management</h3>
+                                <h3 class="font-bold border-b pb-2 mb-4 text-gray-700 uppercase text-sm"><i class="fa-solid fa-users-gear text-govblue mr-2"></i>Faculty Access</h3>
                                 <div class="flex gap-2 mb-4">
                                     <input type="text" id="new-t-id" class="official-input text-sm" placeholder="New ID">
                                     <input type="text" id="new-t-pass" class="official-input text-sm" placeholder="Password">
-                                    <button onclick="addTeacher()" class="bg-gray-800 text-white px-3 rounded"><i class="fa-solid fa-plus"></i></button>
+                                    <button onclick="addTeacher()" class="bg-gray-800 hover:bg-black text-white px-3 rounded"><i class="fa-solid fa-plus"></i></button>
                                 </div>
-                                <div id="teacher-list" class="space-y-2 text-sm bg-gray-50 p-3 border rounded h-40 overflow-y-auto"></div>
+                                <div id="teacher-list" class="space-y-2 text-sm bg-gray-50 p-3 border rounded-md h-40 overflow-y-auto custom-scrollbar"></div>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
 
         <!-- ========================================== -->
-        <!-- 4. STUDENT SEARCH VIEW -->
+        <!-- 4. STUDENT SEARCH VIEW                     -->
         <!-- ========================================== -->
         <div id="student-search-view" class="view-section w-full max-w-md mx-auto">
-            <div class="official-card p-8 text-center relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-2 bg-govblue"></div>
-                <button onclick="showView('home-view')" class="absolute top-4 left-4 text-gray-400 hover:text-govblue"><i class="fa-solid fa-arrow-left"></i></button>
+            <div class="official-card p-8 text-center relative">
+                <button onclick="showView('home-view')" class="absolute top-4 left-4 text-govblue hover:underline text-xs font-bold"><i class="fa-solid fa-arrow-left"></i> BACK</button>
                 
-                <div class="mb-8 mt-4">
-                    <div class="w-20 h-20 bg-blue-50 border-2 border-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 text-3xl shadow-sm">
-                        <i class="fa-solid fa-user-graduate"></i>
-                    </div>
-                    <h2 class="text-2xl font-bold text-gray-800">Admit Card Search</h2>
-                    <p class="text-xs text-gray-500 mt-2">Enter your assigned 6-digit Roll Number</p>
+                <div class="mt-4 mb-6 border-b pb-4">
+                    <img src="https://cdn-icons-png.flaticon.com/512/8198/8198132.png" class="h-16 mx-auto mb-3 opacity-80" alt="Emblem Placeholder">
+                    <h2 class="text-xl font-bold text-gray-800 uppercase cert-font">Candidate Login</h2>
+                    <p class="text-xs text-gray-500 mt-1">Enter your assigned 6-digit Roll Number</p>
                 </div>
                 
                 <input type="number" id="search-roll" class="official-input text-center text-xl mb-4 font-bold tracking-[0.2em] py-3" placeholder="XXXXXX">
-                <button onclick="searchResult()" class="btn-primary w-full py-3 text-lg shadow-md">View Statement of Marks</button>
+                <button onclick="searchResult()" class="btn-primary w-full py-3 text-lg">Submit</button>
                 
-                <div id="search-error" class="hidden mt-4 bg-red-50 text-red-600 border border-red-200 p-3 rounded text-sm font-bold animate-pulse">Record not found. Please verify your Roll Number.</div>
+                <div id="search-error" class="hidden mt-4 bg-red-50 text-red-600 border border-red-200 p-2 text-sm font-bold">Record not found.</div>
             </div>
         </div>
 
         <!-- ========================================== -->
-        <!-- 5. STUDENT RESULT VIEW (CBSE Style Marksheet) -->
+        <!-- 5. STUDENT RESULT VIEW (CBSE Style)        -->
         <!-- ========================================== -->
         <div id="student-result-view" class="view-section w-full max-w-4xl mx-auto">
-            <div class="no-print mb-4 flex justify-between gap-4">
-                <button onclick="showView('student-search-view')" class="btn-primary !bg-gray-600"><i class="fa-solid fa-arrow-left mr-2"></i>Back</button>
+            
+            <div class="no-print mb-4 flex justify-between items-center bg-white p-3 rounded-md shadow-sm border border-gray-200">
+                <button onclick="showView('student-search-view')" class="text-gray-600 hover:text-black font-bold text-sm"><i class="fa-solid fa-arrow-left mr-2"></i>Back</button>
                 <div class="flex gap-2">
-                    <button id="award-btn" onclick="document.getElementById('award-modal').classList.remove('hidden')" class="hidden bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-bold shadow animate-bounce"><i class="fa-solid fa-trophy mr-2"></i>Claim Reward!</button>
-                    <button onclick="window.print()" class="btn-primary !bg-govblue"><i class="fa-solid fa-print mr-2"></i>Download PDF</button>
+                    <button id="award-btn" onclick="document.getElementById('award-modal').classList.remove('hidden')" class="hidden bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-1.5 rounded text-sm font-bold shadow animate-pulse"><i class="fa-solid fa-trophy mr-1"></i> Claim Reward</button>
+                    <button onclick="window.print()" class="btn-primary !bg-govblue !py-1.5 !text-sm"><i class="fa-solid fa-print mr-2"></i>Print PDF</button>
                 </div>
             </div>
 
-            <div class="bg-white print-border relative shadow-2xl">
+            <!-- Authentic Certificate Design -->
+            <div class="bg-white print-border relative shadow-xl overflow-hidden">
+                <!-- Decorative BG Watermark -->
+                <div class="absolute inset-0 flex justify-center items-center opacity-[0.02] pointer-events-none">
+                    <i class="fa-solid fa-graduation-cap text-[30rem]"></i>
+                </div>
+
                 <!-- Header -->
                 <div class="text-center border-b-2 border-black pb-4 mb-6 relative">
-                    <div class="absolute left-0 top-0 text-left text-xs font-mono">
+                    <div class="absolute left-0 top-0 text-left text-[10px] font-mono font-bold text-gray-600">
                         Sr No: <span id="res-srno"></span><br>
-                        School No: 99012
+                        School Code: 99012
                     </div>
+                    <!-- Mock QR Code -->
                     <div class="absolute right-0 top-0 border-2 border-black p-1 w-20 h-20 flex items-center justify-center bg-gray-50">
                         <i class="fa-solid fa-qrcode text-5xl opacity-80"></i>
                     </div>
-                    <h1 class="text-2xl font-black uppercase tracking-widest mt-8">Apex Academy</h1>
-                    <h2 class="text-lg font-bold uppercase mt-1">Statement of Marks</h2>
-                    <p class="text-sm font-bold text-gray-700">Senior Secondary Examination, 2026</p>
+                    
+                    <h1 class="text-2xl font-black uppercase tracking-widest mt-8 cert-font text-govdarkblue">APEX ACADEMY</h1>
+                    <h2 class="text-lg font-bold uppercase mt-1 tracking-wider">Statement of Marks</h2>
+                    <p class="text-sm font-bold text-gray-700">SENIOR SECONDARY EXAMINATION, 2026</p>
                 </div>
 
-                <!-- Info Grid -->
-                <div class="grid grid-cols-2 gap-x-12 gap-y-2 mb-6 text-sm font-bold uppercase">
-                    <div class="flex border-b border-gray-300 pb-1">
-                        <span class="w-1/3 text-gray-600">Candidate Name:</span>
-                        <span class="w-2/3 text-black" id="res-name">--</span>
-                    </div>
-                    <div class="flex border-b border-gray-300 pb-1">
-                        <span class="w-1/3 text-gray-600">Roll Number:</span>
-                        <span class="w-2/3 text-black" id="res-roll">--</span>
+                <!-- Student Info Box -->
+                <div class="border border-black p-4 mb-6 bg-gray-50/50">
+                    <div class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm font-bold uppercase">
+                        <div class="flex border-b border-gray-300 pb-1">
+                            <span class="w-2/5 text-gray-600">Candidate Name:</span>
+                            <span class="w-3/5 text-black" id="res-name">--</span>
+                        </div>
+                        <div class="flex border-b border-gray-300 pb-1">
+                            <span class="w-2/5 text-gray-600">Roll Number:</span>
+                            <span class="w-3/5 text-black" id="res-roll">--</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Marks Table -->
+                <!-- CBSE Style Table (Theory & Practical) -->
                 <table class="w-full text-sm border-collapse border-2 border-black mb-6">
-                    <thead class="font-bold border-b-2 border-black text-center">
+                    <thead class="font-bold border-b-2 border-black text-center bg-gray-100">
                         <tr>
-                            <th class="border-r border-black p-2 text-left w-1/3">Subject</th>
-                            <th class="border-r border-black p-2">Theory<br><span class="text-xs font-normal">(Max 70)</span></th>
-                            <th class="border-r border-black p-2">Prac<br><span class="text-xs font-normal">(Max 30)</span></th>
-                            <th class="border-r border-black p-2">Total<br><span class="text-xs font-normal">(100)</span></th>
-                            <th class="p-2">Grade</th>
+                            <th class="border-r border-black p-2 text-left w-1/3">Subject Name</th>
+                            <th class="border-r border-black p-2">Theory<br><span class="text-[10px] font-normal">(Max 70)</span></th>
+                            <th class="border-r border-black p-2">Prac / IA<br><span class="text-[10px] font-normal">(Max 30)</span></th>
+                            <th class="border-r border-black p-2">Total<br><span class="text-[10px] font-normal">(Out of 100)</span></th>
+                            <th class="p-2 w-16">Grade</th>
                         </tr>
                     </thead>
-                    <tbody id="res-subjects" class="text-center font-bold"></tbody>
-                    <tfoot class="border-t-2 border-black font-black">
+                    <tbody id="res-subjects" class="text-center font-bold">
+                        <!-- Subjects rendered here via JS -->
+                    </tbody>
+                    <tfoot class="border-t-2 border-black font-black bg-gray-50">
                         <tr>
                             <td class="border-r border-black p-2 text-right uppercase">Grand Total</td>
                             <td colspan="3" class="border-r border-black p-2 text-center text-lg tracking-widest" id="res-total">--</td>
@@ -401,69 +463,75 @@
                     </tfoot>
                 </table>
 
-                <!-- Result Status & Footer -->
+                <!-- Result Status & Signatures -->
                 <div class="flex justify-between items-end mt-12 text-sm font-bold">
                     <div>
-                        <p class="mb-1">Result: <span id="res-badge" class="text-lg uppercase tracking-wider ml-2">--</span></p>
-                        <p class="text-gray-600">Percentage: <span id="res-percent" class="text-black ml-1">--%</span></p>
-                        <p class="text-gray-600 text-xs mt-2">Moderation applied if applicable.</p>
+                        <div class="border border-black p-3 bg-gray-50 mb-2 inline-block">
+                            <p class="mb-1 uppercase">Result: <span id="res-badge" class="text-lg tracking-wider ml-2">--</span></p>
+                            <p class="text-gray-700">Percentage: <span id="res-percent" class="text-black ml-1 text-lg">--%</span></p>
+                        </div>
+                        <p class="text-[10px] text-gray-500 max-w-xs">* Moderation applied if applicable.</p>
+                        <p class="text-[10px] text-gray-500 max-w-xs">Remarks: <span id="res-remarks-text"></span></p>
                     </div>
+                    
                     <div class="text-center">
-                        <img id="res-sign" src="" class="h-12 mx-auto mb-1 opacity-80" onerror="this.style.display='none'">
-                        <div class="border-t border-black w-40 mx-auto pt-1">Controller of Examinations</div>
-                        <p class="mt-1" id="res-location">--</p>
-                        <p class="text-xs text-gray-500" id="res-date">--</p>
+                        <img id="res-sign" src="" class="h-10 mx-auto mb-1 opacity-80" onerror="this.style.display='none'">
+                        <div class="border-t border-black w-48 mx-auto pt-1 uppercase text-xs">Controller of Examinations</div>
+                        <p class="mt-1 text-gray-700" id="res-location">--</p>
+                        <p class="text-[10px] text-gray-500" id="res-date">--</p>
                     </div>
                 </div>
             </div>
 
             <!-- Challenge Button -->
-            <div class="no-print mt-6 text-center">
-                <button onclick="document.getElementById('challenge-modal').classList.remove('hidden')" class="text-sm font-bold text-gray-500 hover:text-govorange underline decoration-2 underline-offset-4"><i class="fa-solid fa-scale-balanced mr-1"></i>Apply for Re-evaluation</button>
+            <div class="no-print mt-6 text-center bg-gray-100 p-4 border rounded-md shadow-inner">
+                <p class="text-xs text-gray-500 mb-2">Not satisfied with your marks?</p>
+                <button onclick="document.getElementById('challenge-modal').classList.remove('hidden')" class="btn-primary !bg-govorange hover:bg-orange-700 text-sm"><i class="fa-solid fa-scale-balanced mr-2"></i>Apply for Re-evaluation</button>
             </div>
         </div>
 
     </main>
 
-    <footer class="bg-gray-100 border-t py-6 text-center text-xs text-gray-500 no-print mt-auto">
-        <div class="flex justify-center gap-4 mb-2 font-bold text-gray-600">
-            <a href="#" onclick="showMsg('Privacy Policy', 'Data is stored securely via Google Firebase and used solely for academic result generation. No data is sold.')" class="hover:text-govblue">Privacy Policy</a>
-            <a href="#" onclick="showMsg('Contact Us', 'Support Email: support@apexacademy.edu.in\nPhone: +91 1800-111-222')" class="hover:text-govblue">Contact Us</a>
+    <!-- Footer -->
+    <footer class="bg-govdarkblue text-center py-4 border-t-2 border-govblue text-xs text-gray-400 no-print mt-auto">
+        <div class="flex justify-center gap-6 mb-2 font-bold text-gray-300 uppercase tracking-wider">
+            <a href="#" onclick="showMsg('Privacy Policy', 'Data is stored securely via cloud database. It is used solely for academic result generation. Your data is never sold or shared with third parties.')" class="hover:text-white transition">Privacy Policy</a>
+            <a href="#" onclick="showMsg('Contact Us', 'Support Email: support@apexacademy.edu\nHelpline: +91 1800-111-222\nTimings: 10 AM to 5 PM (Mon-Sat)')" class="hover:text-white transition">Contact Us</a>
         </div>
-        <p>&copy; 2026 Apex Academy. Powered by NIF.</p>
+        <p>&copy; 2026 Apex Academy Educational Trust. All rights reserved.</p>
     </footer>
 
-    <!-- Ticket Modal -->
-    <div id="ticket-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-        <div class="glass-modal rounded-xl w-full max-w-md p-6">
-            <h3 class="text-lg font-bold mb-4">Raise Support Case</h3>
+    <!-- Support Ticket Modal -->
+    <div id="ticket-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="glass-modal rounded-xl w-full max-w-md p-6 border-t-4 border-govblue">
+            <h3 class="text-lg font-bold mb-4 uppercase text-gray-800"><i class="fa-solid fa-headset mr-2 text-govblue"></i>Raise Support Case</h3>
             <input type="text" id="ticket-roll" class="official-input mb-3" placeholder="Your Roll Number">
-            <textarea id="ticket-desc" class="official-input mb-4 h-24" placeholder="Describe your issue..."></textarea>
+            <textarea id="ticket-desc" class="official-input mb-4 h-24 resize-none" placeholder="Describe your issue in detail..."></textarea>
             <div class="flex gap-2">
-                <button onclick="document.getElementById('ticket-modal').classList.add('hidden')" class="bg-gray-200 px-4 py-2 rounded font-bold w-1/3">Cancel</button>
+                <button onclick="document.getElementById('ticket-modal').classList.add('hidden')" class="bg-gray-200 px-4 py-2 rounded font-bold w-1/3 hover:bg-gray-300">Cancel</button>
                 <button onclick="submitTicket()" class="btn-primary w-2/3">Submit Case</button>
             </div>
         </div>
     </div>
 
-    <!-- Challenge Modal -->
-    <div id="challenge-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-        <div class="glass-modal rounded-xl w-full max-w-sm p-6 text-center">
-            <div class="w-16 h-16 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl"><i class="fa-solid fa-scale-balanced"></i></div>
-            <h3 class="text-xl font-bold mb-2">Re-evaluation</h3>
-            <p class="text-sm text-gray-600 mb-4">Fee per challenge is <span class="font-bold text-black">₹<span id="display-fee">500</span></span>. This amount is non-refundable.</p>
-            <button onclick="processChallenge()" class="btn-primary w-full bg-green-600 hover:bg-green-700 mb-2">Pay & Submit Request</button>
-            <button onclick="document.getElementById('challenge-modal').classList.add('hidden')" class="text-xs text-gray-500 underline">Cancel</button>
+    <!-- Challenge Mock Payment Modal -->
+    <div id="challenge-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="glass-modal rounded-xl w-full max-w-sm p-6 text-center border-t-4 border-govorange">
+            <div class="w-16 h-16 bg-orange-50 text-govorange rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border border-orange-200"><i class="fa-solid fa-scale-balanced"></i></div>
+            <h3 class="text-xl font-bold mb-2 uppercase text-gray-800">Re-evaluation Request</h3>
+            <p class="text-sm text-gray-600 mb-6">Processing fee per challenge is <span class="font-bold text-black text-lg">₹<span id="display-fee">500</span></span>. This amount is non-refundable.</p>
+            <button onclick="processChallenge()" class="btn-primary w-full !bg-green-600 hover:!bg-green-700 mb-3 shadow-lg">Pay & Submit Request</button>
+            <button onclick="document.getElementById('challenge-modal').classList.add('hidden')" class="text-xs text-gray-500 font-bold hover:underline">CANCEL</button>
         </div>
     </div>
 
-    <!-- Award Modal -->
-    <div id="award-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl w-full max-w-md p-8 text-center shadow-[0_0_50px_rgba(234,179,8,0.5)]">
-            <div class="text-6xl mb-4">🏆</div>
-            <h3 class="text-3xl font-black text-yellow-600 uppercase mb-2">Outstanding!</h3>
-            <p class="text-gray-600 font-bold mb-6">Congratulations on scoring above 90%! Please visit the main office with your marksheet to collect your reward.</p>
-            <button onclick="document.getElementById('award-modal').classList.add('hidden')" class="bg-yellow-500 text-white font-bold px-8 py-3 rounded-full hover:bg-yellow-600">Close</button>
+    <!-- 90%+ Award Modal -->
+    <div id="award-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-white rounded-xl w-full max-w-md p-8 text-center border-4 border-yellow-400 shadow-[0_0_60px_rgba(250,204,21,0.4)]">
+            <div class="text-7xl mb-4 animate-bounce">🏆</div>
+            <h3 class="text-3xl font-black text-yellow-600 uppercase mb-2 tracking-wide">Outstanding!</h3>
+            <p class="text-gray-700 font-bold mb-6 text-sm">Congratulations on scoring above 90%! Please visit the main administration office with a printout of this marksheet to collect your merit reward.</p>
+            <button onclick="document.getElementById('award-modal').classList.add('hidden')" class="bg-yellow-500 text-white font-bold px-8 py-3 rounded uppercase tracking-wider hover:bg-yellow-600 shadow-md">Close</button>
         </div>
     </div>
 
@@ -481,10 +549,11 @@
             appId: "1:38457744845:web:eea16e46ef02232046b884",
             measurementId: "G-7QMET27TGY"
         };
+        
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // Database State Structure
+        // Core State
         let dbState = { 
             subjects: [], 
             students: {}, 
@@ -498,12 +567,12 @@
             } 
         };
 
-        // Live Listener
+        // Live Database Listener
         database.ref('apexData').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
                 dbState = { ...dbState, ...data };
-                // Ensure arrays/objects exist if empty in DB
+                // Ensure arrays/objects exist if DB returns empty
                 if(!dbState.subjects) dbState.subjects = [];
                 if(!dbState.students) dbState.students = {};
                 if(!dbState.notices) dbState.notices = [];
@@ -512,24 +581,28 @@
                 if(!dbState.challenges) dbState.challenges = [];
                 if(!dbState.settings) dbState.settings = { portalActive: true, location: 'New Delhi', signUrl: '', fee: 500, teachers: {'ABC_990': '122333444455555'} };
             }
-            document.getElementById('db-status').innerText = "Online";
-            document.getElementById('db-status').className = "text-xs bg-green-600 px-2 py-1 rounded font-mono shadow";
+            
+            const statusIndicator = document.getElementById('db-status');
+            statusIndicator.innerText = "Connected";
+            statusIndicator.className = "text-[10px] bg-green-600 px-2 py-1 rounded font-bold uppercase tracking-wider border border-green-500 shadow-sm";
             
             updateAllUI();
         });
 
         function saveDB() {
-            document.getElementById('db-status').innerText = "Syncing...";
-            document.getElementById('db-status').className = "text-xs bg-orange-500 px-2 py-1 rounded font-mono shadow";
+            const statusIndicator = document.getElementById('db-status');
+            statusIndicator.innerText = "Syncing...";
+            statusIndicator.className = "text-[10px] bg-govorange px-2 py-1 rounded font-bold uppercase tracking-wider border border-orange-500 shadow-sm";
             database.ref('apexData').set(dbState);
         }
 
         // ==========================================
-        // 2. UI HELPERS (Modals & Navigation)
+        // 2. UI HELPERS & ROUTING
         // ==========================================
         function showView(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
+            
             const logoutBtn = document.getElementById('logout-btn');
             if(viewId === 'teacher-dashboard-view') logoutBtn.classList.remove('hidden');
             else logoutBtn.classList.add('hidden');
@@ -550,18 +623,6 @@
             document.getElementById('custom-modal').classList.remove('hidden');
         }
 
-        function showConfirm(title, msg, onConfirm) {
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-msg').innerText = msg;
-            document.getElementById('modal-icon').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-4xl text-orange-500"></i>`;
-            document.getElementById('modal-actions').innerHTML = `
-                <button onclick="closeModal()" class="bg-gray-200 px-4 py-2 rounded-lg font-bold">Cancel</button>
-                <button id="confirm-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg font-bold">Confirm</button>
-            `;
-            document.getElementById('confirm-btn').onclick = () => { onConfirm(); closeModal(); };
-            document.getElementById('custom-modal').classList.remove('hidden');
-        }
-
         function closeModal() { document.getElementById('custom-modal').classList.add('hidden'); }
 
         function updateAllUI() {
@@ -576,26 +637,26 @@
         // ==========================================
         function renderPublicNotices() {
             const board = document.getElementById('public-notice-board');
-            if(dbState.notices.length === 0) return board.innerHTML = '<p class="text-xs text-gray-500 text-center italic mt-10">No new notices.</p>';
+            if(dbState.notices.length === 0) return board.innerHTML = '<p class="text-xs text-gray-400 text-center italic mt-6">No active notices.</p>';
             
             board.innerHTML = dbState.notices.map(n => `
-                <div class="bg-white p-3 border rounded shadow-sm flex justify-between items-center">
-                    <div>
-                        <p class="font-bold text-sm text-govblue">${n.title}</p>
-                        <p class="text-[10px] text-gray-400"><i class="fa-regular fa-clock mr-1"></i>${n.date}</p>
+                <div class="bg-gray-50 p-3 border border-gray-200 rounded flex justify-between items-center hover:bg-gray-100 transition">
+                    <div class="overflow-hidden">
+                        <p class="font-bold text-sm text-govblue truncate">${n.title}</p>
+                        <p class="text-[10px] text-gray-500 font-mono mt-0.5"><i class="fa-regular fa-calendar mr-1"></i>${n.date}</p>
                     </div>
-                    ${n.url ? `<a href="${n.url}" download="${n.title}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-bold transition"><i class="fa-solid fa-download mr-1"></i>Get</a>` : ''}
+                    ${n.url ? `<a href="${n.url}" download="${n.title}" class="bg-white border border-gray-300 text-govblue px-3 py-1.5 rounded text-xs font-bold hover:bg-gray-50 transition shadow-sm flex-shrink-0"><i class="fa-solid fa-download mr-1"></i>Get</a>` : ''}
                 </div>
             `).reverse().join('');
         }
 
         function sendChat() {
-            const name = document.getElementById('chat-name').value.trim() || 'Anonymous';
+            const name = document.getElementById('chat-name').value.trim() || 'Student';
             const msg = document.getElementById('chat-msg').value.trim();
             if(!msg) return;
             
             dbState.chat.push({ name, msg, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
-            if(dbState.chat.length > 50) dbState.chat.shift(); // Keep last 50
+            if(dbState.chat.length > 40) dbState.chat.shift(); 
             saveDB();
             document.getElementById('chat-msg').value = '';
         }
@@ -603,12 +664,12 @@
         function renderChat() {
             const container = document.getElementById('chat-container');
             container.innerHTML = dbState.chat.map(c => `
-                <div class="bg-blue-50/50 p-2 rounded border border-blue-100">
+                <div class="bg-blue-50/50 p-2.5 rounded border border-blue-100">
                     <div class="flex justify-between items-baseline mb-1">
                         <span class="text-xs font-bold text-govblue">${c.name}</span>
-                        <span class="text-[9px] text-gray-400">${c.time}</span>
+                        <span class="text-[9px] text-gray-400 font-mono">${c.time}</span>
                     </div>
-                    <p class="text-xs text-gray-700">${c.msg}</p>
+                    <p class="text-xs text-gray-700 leading-relaxed">${c.msg}</p>
                 </div>
             `).join('');
             container.scrollTop = container.scrollHeight;
@@ -617,31 +678,35 @@
         function submitTicket() {
             const roll = document.getElementById('ticket-roll').value;
             const desc = document.getElementById('ticket-desc').value;
-            if(!roll || !desc) return showMsg("Error", "Please fill all fields.", "fa-solid fa-circle-exclamation text-red-500");
+            if(!roll || !desc) return showMsg("Required Fields", "Please provide Roll Number and Description.", "fa-solid fa-triangle-exclamation text-orange-500");
             
             const id = 'TKT' + Math.floor(Math.random()*90000 + 10000);
             dbState.tickets.push({ id, roll, desc, status: 'Pending', reply: '' });
             saveDB();
             document.getElementById('ticket-modal').classList.add('hidden');
-            showMsg("Case Registered", `Your Ticket ID is ${id}. Save this ID to check status later.`);
+            showMsg("Case Registered", `Your Ticket ID is ${id}. Keep this safe to check your status.`, "fa-solid fa-check-circle text-green-500");
             document.getElementById('ticket-roll').value = ''; document.getElementById('ticket-desc').value = '';
         }
 
         function checkTicket() {
-            const id = document.getElementById('check-ticket-id').value.toUpperCase();
+            const id = document.getElementById('check-ticket-id').value.trim().toUpperCase();
+            if(!id) return;
             const ticket = dbState.tickets.find(t => t.id === id);
             const resDiv = document.getElementById('ticket-result');
             resDiv.classList.remove('hidden');
             
             if(!ticket) {
                 resDiv.className = "mt-3 text-sm p-3 rounded bg-red-50 text-red-600 border border-red-200 font-bold";
-                resDiv.innerText = "Ticket not found.";
+                resDiv.innerText = "Ticket ID not found in system.";
             } else {
-                resDiv.className = "mt-3 text-sm p-3 rounded bg-blue-50 border border-blue-200";
+                resDiv.className = "mt-3 text-sm p-3 rounded bg-gray-50 border border-gray-200";
                 resDiv.innerHTML = `
-                    <div class="flex justify-between font-bold mb-2"><span>Status:</span> <span class="${ticket.status==='Resolved'?'text-green-600':'text-orange-500'}">${ticket.status}</span></div>
-                    <p class="text-xs text-gray-600 mb-1"><strong>Your Issue:</strong> ${ticket.desc}</p>
-                    ${ticket.reply ? `<div class="mt-2 pt-2 border-t border-blue-200 text-xs"><strong class="text-govblue">Admin Reply:</strong> ${ticket.reply}</div>` : ''}
+                    <div class="flex justify-between font-bold mb-2 pb-1 border-b">
+                        <span class="text-gray-700">Status:</span> 
+                        <span class="${ticket.status==='Resolved'?'text-green-600':'text-orange-500'} uppercase">${ticket.status}</span>
+                    </div>
+                    <p class="text-xs text-gray-600 mb-2"><strong>Issue:</strong> ${ticket.desc}</p>
+                    ${ticket.reply ? `<div class="mt-2 p-2 bg-blue-50 border border-blue-100 rounded text-xs"><strong class="text-govblue">Admin Reply:</strong> ${ticket.reply}</div>` : ''}
                 `;
             }
         }
@@ -665,9 +730,9 @@
         function renderSettingsTab() {
             const btn = document.getElementById('toggle-portal-btn');
             if(dbState.settings.portalActive) {
-                btn.innerText = "ACTIVE"; btn.className = "px-4 py-1 rounded font-bold text-sm text-white bg-green-600";
+                btn.innerText = "ONLINE"; btn.className = "px-4 py-1.5 rounded font-bold text-xs text-white bg-green-600 uppercase tracking-wider";
             } else {
-                btn.innerText = "CLOSED"; btn.className = "px-4 py-1 rounded font-bold text-sm text-white bg-red-600";
+                btn.innerText = "OFFLINE"; btn.className = "px-4 py-1.5 rounded font-bold text-xs text-white bg-red-600 uppercase tracking-wider";
             }
             
             document.getElementById('set-location').value = dbState.settings.location || '';
@@ -677,24 +742,26 @@
 
             const tList = document.getElementById('teacher-list');
             tList.innerHTML = Object.keys(dbState.settings.teachers).map(id => `
-                <div class="flex justify-between items-center bg-white p-2 border rounded">
-                    <span class="font-mono font-bold">${id}</span>
-                    ${id !== 'ABC_990' ? `<button onclick="deleteTeacher('${id}')" class="text-red-500"><i class="fa-solid fa-trash"></i></button>` : '<span class="text-xs text-gray-400">Master</span>'}
+                <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded">
+                    <span class="font-mono font-bold text-gray-700">${id}</span>
+                    ${id !== 'ABC_990' ? `<button onclick="deleteTeacher('${id}')" class="text-red-500 hover:bg-red-50 px-2 rounded"><i class="fa-solid fa-trash"></i></button>` : '<span class="text-[10px] text-gray-400 font-bold uppercase">Master</span>'}
                 </div>
             `).join('');
         }
 
         function togglePortal() { dbState.settings.portalActive = !dbState.settings.portalActive; saveDB(); }
+        
         function saveSettings() {
             dbState.settings.location = document.getElementById('set-location').value;
             dbState.settings.signUrl = document.getElementById('set-sign').value;
             dbState.settings.fee = parseInt(document.getElementById('set-fee').value) || 500;
             saveDB();
-            showMsg("Saved", "System configuration updated.");
+            showMsg("Configuration Saved", "System settings have been updated.", "fa-solid fa-check text-green-500");
         }
+        
         function addTeacher() {
-            const id = document.getElementById('new-t-id').value;
-            const pass = document.getElementById('new-t-pass').value;
+            const id = document.getElementById('new-t-id').value.trim();
+            const pass = document.getElementById('new-t-pass').value.trim();
             if(!id || !pass) return;
             dbState.settings.teachers[id] = pass;
             document.getElementById('new-t-id').value = ''; document.getElementById('new-t-pass').value = '';
@@ -703,119 +770,166 @@
         function deleteTeacher(id) { delete dbState.settings.teachers[id]; saveDB(); }
 
         // ==========================================
-        // 5. RESULT CALCULATION LOGIC (FIXED)
+        // 5. RESULT CALCULATION LOGIC (Index Fix Applied)
         // ==========================================
         function getGrade(marks) {
             if(marks >= 91) return 'A1'; if(marks >= 81) return 'A2';
             if(marks >= 71) return 'B1'; if(marks >= 61) return 'B2';
             if(marks >= 51) return 'C1'; if(marks >= 41) return 'C2';
-            if(marks >= 33) return 'D';  return 'E (Fail)';
+            if(marks >= 33) return 'D';  return 'E';
         }
 
         function addSubject() {
             const sub = document.getElementById('new-subject').value.trim();
             if (sub && !dbState.subjects.includes(sub)) { dbState.subjects.push(sub); document.getElementById('new-subject').value = ''; saveDB(); }
         }
-        function removeSubject(sub) { showConfirm("Remove Subject?", `Delete ${sub}?`, () => { dbState.subjects = dbState.subjects.filter(s => s !== sub); saveDB(); }); }
+        
+        function removeSubject(sub) {
+            // Using standard confirm here as it's quick for admin
+            if(confirm(`Remove subject: ${sub}?`)) { 
+                dbState.subjects = dbState.subjects.filter(s => s !== sub); 
+                saveDB(); 
+            }
+        }
 
         function saveStudent() {
             const roll = document.getElementById('s-roll').value;
             const name = document.getElementById('s-name').value;
             const moderation = parseInt(document.getElementById('s-mod').value) || 0;
-            const remarks = document.getElementById('s-remarks').value;
+            const remarks = document.getElementById('s-remarks').value || 'N/A';
             
-            if(!roll || !name) return showMsg("Error", "Roll and Name are required.", "fa-solid fa-circle-exclamation text-red-500");
-            if(dbState.subjects.length === 0) return showMsg("Error", "Add subjects first.");
+            if(!roll || !name) return showMsg("Error", "Roll Number and Name are mandatory.", "fa-solid fa-triangle-exclamation text-red-500");
+            if(dbState.subjects.length === 0) return showMsg("Error", "Configure at least one subject first.");
 
             let total = 0; 
             let subjectMarks = {}; 
             let passedAll = true;
 
-            // FIX: Using array index 'i' instead of subject name string to prevent ID matching errors
-            dbState.subjects.forEach((sub, i) => {
+            // FIX: Using array index 'i' to strictly read Theory & Practical inputs, avoiding string mismatches
+            dbState.subjects.forEach((subName, i) => {
                 const th = parseInt(document.getElementById(`th-${i}`).value) || 0;
                 const pr = parseInt(document.getElementById(`pr-${i}`).value) || 0;
                 const subTotal = th + pr;
-                subjectMarks[sub] = { theory: th, practical: pr, total: subTotal };
+                
+                subjectMarks[subName] = { theory: th, practical: pr, total: subTotal };
                 total += subTotal;
+                
+                // 33% criteria per subject
                 if(subTotal < 33) passedAll = false; 
             });
 
-            total += moderation; // Add grace marks to grand total
+            total += moderation; // Apply Grace marks to Grand Total
             const maxTotal = dbState.subjects.length * 100;
             const percentage = ((total / maxTotal) * 100).toFixed(1);
+            
+            // Overall Pass Criteria
             const status = (percentage >= 33 && passedAll) ? "PASS" : "FAIL";
 
             dbState.students[roll] = { roll, name, moderation, remarks, subjectMarks, total, maxTotal, percentage, status };
             
+            // Reset Form
             document.getElementById('s-roll').value = ''; document.getElementById('s-name').value = ''; document.getElementById('s-mod').value = '0'; document.getElementById('s-remarks').value = '';
             dbState.subjects.forEach((s, i) => { document.getElementById(`th-${i}`).value = ''; document.getElementById(`pr-${i}`).value = ''; });
+            
             saveDB();
-            showMsg("Success", `Record for ${roll} saved.`);
+            showMsg("Success", `Record for Roll No: ${roll} saved successfully.`, "fa-solid fa-check text-green-500");
         }
-        function deleteStudent(roll) { showConfirm("Delete Record?", `Are you sure you want to delete ${roll}?`, () => { delete dbState.students[roll]; saveDB(); }); }
+
+        function deleteStudent(roll) { 
+            if(confirm(`Delete record for ${roll}?`)) { delete dbState.students[roll]; saveDB(); }
+        }
 
         // ==========================================
         // 6. TEACHER DASHBOARD RENDERER
         // ==========================================
         function renderTeacherDashboard() {
-            // Upload Tab (Uses index 'i' for robust input mapping)
-            document.getElementById('subject-list').innerHTML = dbState.subjects.map(s => `<span class="bg-gray-200 px-2 py-1 rounded border flex items-center gap-1">${s} <i class="fa-solid fa-xmark text-red-500 cursor-pointer" onclick="removeSubject('${s}')"></i></span>`).join('');
+            // Tab 1: Upload (Mapping inputs by index 'i')
+            document.getElementById('subject-list').innerHTML = dbState.subjects.map(s => `<span class="bg-gray-200 px-2 py-1 rounded border border-gray-300 flex items-center gap-1 font-bold text-gray-700">${s} <i class="fa-solid fa-xmark text-red-500 hover:text-red-700 cursor-pointer ml-1" onclick="removeSubject('${s}')"></i></span>`).join('');
             
             document.getElementById('marks-inputs-container').innerHTML = dbState.subjects.map((s, i) => `
-                <div class="grid grid-cols-12 gap-2 items-center px-2 py-1 border-b last:border-0 hover:bg-gray-50">
-                    <label class="col-span-6 font-bold text-gray-700 text-sm truncate">${s}</label>
-                    <input type="number" id="th-${i}" class="col-span-3 official-input !py-1 text-center" placeholder="0" max="70">
-                    <input type="number" id="pr-${i}" class="col-span-3 official-input !py-1 text-center" placeholder="0" max="30">
+                <div class="grid grid-cols-12 gap-2 items-center mb-2">
+                    <label class="col-span-6 font-bold text-gray-700 text-xs truncate">${s}</label>
+                    <input type="number" id="th-${i}" class="col-span-3 official-input !py-1.5 text-center text-sm" placeholder="0" max="70">
+                    <input type="number" id="pr-${i}" class="col-span-3 official-input !py-1.5 text-center text-sm" placeholder="0" max="30">
                 </div>
             `).join('');
 
-            // DB Tab
+            // Tab 2: Database Table
             const tbody = document.getElementById('student-table-body');
             tbody.innerHTML = Object.values(dbState.students).map(st => `
                 <tr class="hover:bg-gray-50">
-                    <td class="p-3 font-bold font-mono">${st.roll}</td>
-                    <td class="p-3">${st.name}</td>
+                    <td class="p-3 font-bold font-mono text-gray-700">${st.roll}</td>
+                    <td class="p-3 font-medium">${st.name}</td>
                     <td class="p-3 text-center font-bold">${st.total}</td>
                     <td class="p-3 text-center">${st.percentage}%</td>
-                    <td class="p-3 text-center"><span class="px-2 py-1 text-xs font-bold rounded ${st.status==='PASS'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}">${st.status}</span></td>
-                    <td class="p-3 text-right"><button onclick="deleteStudent('${st.roll}')" class="text-red-500 bg-red-50 px-2 py-1 rounded hover:bg-red-100"><i class="fa-solid fa-trash text-xs"></i></button></td>
+                    <td class="p-3 text-center"><span class="px-2 py-1 text-[10px] font-bold uppercase rounded border ${st.status==='PASS'?'bg-green-100 text-green-800 border-green-300':'bg-red-100 text-red-800 border-red-300'}">${st.status}</span></td>
+                    <td class="p-3 text-right">
+                        <button onclick="loadStudentToForm('${st.roll}')" class="text-govblue bg-blue-50 px-2 py-1 rounded border border-blue-200 hover:bg-blue-100 mr-1" title="Edit/View"><i class="fa-solid fa-pen text-xs"></i></button>
+                        <button onclick="deleteStudent('${st.roll}')" class="text-red-600 bg-red-50 px-2 py-1 rounded border border-red-200 hover:bg-red-100" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </td>
                 </tr>
             `).join('');
 
-            // Requests Tab (Challenges & Tickets)
+            // Tab 4: Requests & Tickets
             document.getElementById('challenge-list').innerHTML = dbState.challenges.length ? dbState.challenges.map((c, idx) => `
-                <div class="border p-3 rounded shadow-sm text-sm">
-                    <div class="flex justify-between font-bold text-govorange mb-1"><span>Roll: ${c.roll}</span> <span>Paid: ₹${c.fee}</span></div>
-                    <p class="text-gray-500 text-xs mb-2">Request Date: ${c.date}</p>
-                    <button onclick="resolveChallenge(${idx}, '${c.roll}')" class="bg-green-600 text-white px-3 py-1 rounded text-xs"><i class="fa-solid fa-check mr-1"></i>Mark Resolved</button>
+                <div class="border border-gray-200 p-3 rounded-md shadow-sm text-sm">
+                    <div class="flex justify-between font-bold text-govorange mb-2 border-b pb-1">
+                        <span>Roll: ${c.roll}</span> 
+                        <span>Fee Paid: ₹${c.fee}</span>
+                    </div>
+                    <p class="text-gray-500 text-xs mb-3 font-mono">Date: ${c.date}</p>
+                    <div class="flex gap-2">
+                        <button onclick="loadStudentToForm('${c.roll}'); switchTab('tab-upload');" class="bg-gray-800 text-white px-3 py-1 rounded text-xs font-bold hover:bg-black"><i class="fa-solid fa-pen-to-square mr-1"></i>Evaluate</button>
+                        <button onclick="resolveChallenge(${idx}, '${c.roll}')" class="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-green-700"><i class="fa-solid fa-check mr-1"></i>Resolve</button>
+                    </div>
                 </div>
-            `).join('') : '<p class="text-gray-400 text-center mt-8 text-sm">No pending challenges.</p>';
+            `).join('') : '<p class="text-gray-400 text-center mt-6 text-xs font-bold uppercase">No pending challenges.</p>';
 
             document.getElementById('admin-ticket-list').innerHTML = dbState.tickets.length ? dbState.tickets.map((t, idx) => `
-                <div class="border p-3 rounded shadow-sm text-sm">
-                    <div class="flex justify-between font-bold mb-1"><span>${t.id} (Roll: ${t.roll})</span> <span class="${t.status==='Resolved'?'text-green-600':'text-orange-500'}">${t.status}</span></div>
-                    <p class="text-gray-600 text-xs mb-2">${t.desc}</p>
+                <div class="border border-gray-200 p-3 rounded-md shadow-sm text-sm">
+                    <div class="flex justify-between font-bold mb-1">
+                        <span class="text-gray-800">${t.id} <span class="text-gray-500 font-normal">(Roll: ${t.roll})</span></span> 
+                        <span class="${t.status==='Resolved'?'text-green-600':'text-orange-500'} uppercase text-xs">${t.status}</span>
+                    </div>
+                    <p class="text-gray-600 text-xs mb-3 bg-gray-50 p-2 border rounded">${t.desc}</p>
                     ${t.status === 'Pending' ? `
-                        <div class="flex gap-2 mt-2">
-                            <input type="text" id="reply-${idx}" class="official-input !py-1 text-xs w-full" placeholder="Type reply...">
-                            <button onclick="replyTicket(${idx})" class="bg-govblue text-white px-3 rounded text-xs">Reply</button>
+                        <div class="flex gap-2">
+                            <input type="text" id="reply-${idx}" class="official-input !py-1 text-xs w-full" placeholder="Type resolution reply...">
+                            <button onclick="replyTicket(${idx})" class="bg-govblue hover:bg-govdarkblue text-white px-3 rounded text-xs font-bold">Reply</button>
                         </div>
-                    ` : `<p class="text-xs text-govblue bg-blue-50 p-1 mt-1 rounded"><i class="fa-solid fa-reply mr-1"></i>${t.reply}</p>`}
+                    ` : `<p class="text-[10px] text-govblue bg-blue-50 p-2 rounded border border-blue-100 font-bold"><i class="fa-solid fa-reply mr-1"></i>${t.reply}</p>`}
                 </div>
-            `).reverse().join('') : '<p class="text-gray-400 text-center mt-8 text-sm">No support tickets.</p>';
+            `).reverse().join('') : '<p class="text-gray-400 text-center mt-6 text-xs font-bold uppercase">No support tickets.</p>';
 
-            // Notices Admin Tab
+            // Tab 3: Admin Notice List
             document.getElementById('admin-notice-list').innerHTML = dbState.notices.map((n, idx) => `
-                <div class="flex justify-between items-center border-b pb-2">
+                <div class="flex justify-between items-center border-b border-gray-100 pb-2">
                     <span class="text-sm font-bold text-gray-700 truncate w-3/4">${n.title}</span>
-                    <button onclick="deleteNotice(${idx})" class="text-red-500 hover:bg-red-50 p-1 rounded"><i class="fa-solid fa-trash"></i></button>
+                    <button onclick="deleteNotice(${idx})" class="text-red-500 hover:bg-red-50 p-1.5 rounded border border-transparent hover:border-red-200"><i class="fa-solid fa-trash"></i></button>
                 </div>
             `).reverse().join('');
         }
 
+        // Helper: Load student into form for Editing/Evaluating Challenges
+        function loadStudentToForm(roll) {
+            const st = dbState.students[roll];
+            if(!st) return;
+            document.getElementById('s-roll').value = st.roll;
+            document.getElementById('s-name').value = st.name;
+            document.getElementById('s-mod').value = st.moderation || 0;
+            document.getElementById('s-remarks').value = st.remarks || '';
+            
+            dbState.subjects.forEach((subName, i) => {
+                if(st.subjectMarks[subName]) {
+                    document.getElementById(`th-${i}`).value = st.subjectMarks[subName].theory;
+                    document.getElementById(`pr-${i}`).value = st.subjectMarks[subName].practical;
+                }
+            });
+            switchTab('tab-upload');
+        }
+
         // ==========================================
-        // 7. FILE UPLOAD (DIRECT TO BASE64)
+        // 7. FILE UPLOAD (Base64 Direct Database Storage)
         // ==========================================
         function uploadDirectNotice() {
             const title = document.getElementById('notice-title').value.trim();
@@ -826,45 +940,47 @@
             if(fileInput.files.length === 0) return showMsg("No File", "Please select a PDF or image file.", "fa-solid fa-file-circle-xmark text-orange-500");
             
             const file = fileInput.files[0];
+            // 2MB Limit to keep database healthy
             if(file.size > 2 * 1024 * 1024) return showMsg("File Too Large", "Please select a file smaller than 2MB.", "fa-solid fa-weight-hanging text-red-500");
             
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Converting...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Converting & Uploading...';
             btn.disabled = true;
 
             const reader = new FileReader();
             reader.onload = function(e) {
+                // e.target.result is the Base64 string
                 dbState.notices.push({ title: title, url: e.target.result, date: new Date().toLocaleDateString() });
                 saveDB();
-                showMsg("Upload Complete", "Document uploaded to Notice Board.");
+                showMsg("Upload Complete", "Document has been successfully uploaded to the Notice Board.", "fa-solid fa-check text-green-500");
                 document.getElementById('notice-title').value = ''; fileInput.value = '';
-                btn.innerHTML = '<i class="fa-solid fa-upload mr-2"></i> Upload to Notice Board';
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i> Upload to Portal';
                 btn.disabled = false;
             };
             reader.readAsDataURL(file);
         }
-        function deleteNotice(idx) { showConfirm("Delete?", "Remove this notice?", () => { dbState.notices.splice(idx, 1); saveDB(); }); }
+        function deleteNotice(idx) { if(confirm("Remove this notice permanently?")) { dbState.notices.splice(idx, 1); saveDB(); } }
 
         // ==========================================
-        // 8. REQUEST ACTIONS (Admin)
+        // 8. ADMIN ACTIONS (Tickets & Challenges)
         // ==========================================
         function resolveChallenge(idx, roll) {
             dbState.challenges.splice(idx, 1); saveDB();
-            showMsg("Resolved", `Challenge for ${roll} closed.`);
+            showMsg("Challenge Resolved", `The re-evaluation request for Roll No ${roll} has been closed.`, "fa-solid fa-check-circle text-green-500");
         }
         function replyTicket(idx) {
-            const reply = document.getElementById(`reply-${idx}`).value;
+            const reply = document.getElementById(`reply-${idx}`).value.trim();
             if(!reply) return;
             dbState.tickets[idx].reply = reply; dbState.tickets[idx].status = 'Resolved';
             saveDB();
         }
 
         // ==========================================
-        // 9. STUDENT RESULT VIEWER
+        // 9. STUDENT RESULT VIEWER (CBSE Format)
         // ==========================================
         function searchResult() {
-            if(!dbState.settings.portalActive) return showMsg("Portal Offline", "The result portal is currently closed by the administration.", "fa-solid fa-lock text-red-500");
+            if(!dbState.settings.portalActive) return showMsg("Portal Offline", "The public result portal is currently locked by the administration. Please try again later.", "fa-solid fa-lock text-red-500");
             
-            const roll = document.getElementById('search-roll').value;
+            const roll = document.getElementById('search-roll').value.trim();
             const err = document.getElementById('search-error');
             
             if(!roll || !dbState.students[roll]) { err.classList.remove('hidden'); return; }
@@ -872,31 +988,46 @@
             
             const student = dbState.students[roll];
             
-            // Populate Fields
-            document.getElementById('res-srno').innerText = Math.floor(Math.random() * 90000) + 10000;
+            // Populate Basic Info
+            document.getElementById('res-srno').innerText = Math.floor(Math.random() * 900000) + 100000;
             document.getElementById('res-name').innerText = student.name;
             document.getElementById('res-roll').innerText = student.roll;
             document.getElementById('res-total').innerText = student.total;
             document.getElementById('res-percent').innerText = student.percentage + '%';
-            document.getElementById('res-badge').innerText = student.status;
-            document.getElementById('res-badge').className = student.status === 'PASS' ? 'text-xl font-black text-green-700 ml-2' : 'text-xl font-black text-red-700 ml-2';
+            document.getElementById('res-remarks-text').innerText = student.remarks || 'None';
+            
+            // Overall Status Badge
+            const badge = document.getElementById('res-badge');
+            badge.innerText = student.status;
+            badge.className = student.status === 'PASS' ? 'text-xl font-black text-green-700 ml-2 uppercase' : 'text-xl font-black text-red-700 ml-2 uppercase';
             document.getElementById('res-overall-grade').innerText = getGrade((student.total / student.maxTotal) * 100);
             
-            // Dynamic DB Settings
+            // Dynamic Institutional Details
             document.getElementById('res-location').innerText = dbState.settings.location || 'New Delhi';
             document.getElementById('res-sign').src = dbState.settings.signUrl || '';
-            document.getElementById('res-date').innerText = 'Dated: ' + new Date().toLocaleDateString();
+            document.getElementById('res-date').innerText = 'Date of Declaration: ' + new Date().toLocaleDateString();
 
-            // Render Subjects Table
-            document.getElementById('res-subjects').innerHTML = Object.entries(student.subjectMarks).map(([sub, marks]) => `
-                <tr class="border-b border-gray-300">
-                    <td class="border-r border-black p-2 text-left uppercase text-gray-800">${sub}</td>
-                    <td class="border-r border-black p-2">${marks.theory}</td>
-                    <td class="border-r border-black p-2">${marks.practical}</td>
-                    <td class="border-r border-black p-2 font-black">${marks.total}</td>
-                    <td class="p-2">${getGrade(marks.total)}</td>
-                </tr>
-            `).join('');
+            // Render Subjects Table (Theory & Practical)
+            const tbody = document.getElementById('res-subjects');
+            tbody.innerHTML = '';
+            
+            for (const [subName, marks] of Object.entries(student.subjectMarks)) {
+                // If marks is a number (old data format fallback), convert to object format
+                const isObj = typeof marks === 'object';
+                const th = isObj ? marks.theory : marks;
+                const pr = isObj ? marks.practical : 0;
+                const tot = isObj ? marks.total : marks;
+                
+                tbody.innerHTML += `
+                    <tr class="border-b border-gray-300">
+                        <td class="border-r border-black p-2 text-left font-bold uppercase text-gray-800">${subName}</td>
+                        <td class="border-r border-black p-2">${th.toString().padStart(3, '0')}</td>
+                        <td class="border-r border-black p-2">${pr.toString().padStart(3, '0')}</td>
+                        <td class="border-r border-black p-2 font-black">${tot.toString().padStart(3, '0')}</td>
+                        <td class="p-2">${getGrade(tot)}</td>
+                    </tr>
+                `;
+            }
 
             // 90% Award Trigger
             if(parseFloat(student.percentage) >= 90) document.getElementById('award-btn').classList.remove('hidden');
@@ -906,14 +1037,20 @@
         }
 
         // ==========================================
-        // 10. MOCK PAYMENT LOGIC
+        // 10. MOCK PAYMENT LOGIC (Re-eval)
         // ==========================================
         function processChallenge() {
             const roll = document.getElementById('res-roll').innerText;
+            // Prevent duplicate challenges
+            if(dbState.challenges.some(c => c.roll === roll)) {
+                document.getElementById('challenge-modal').classList.add('hidden');
+                return showMsg("Already Applied", "A re-evaluation request for this roll number is already pending.", "fa-solid fa-circle-exclamation text-orange-500");
+            }
+            
             dbState.challenges.push({ roll: roll, fee: dbState.settings.fee, date: new Date().toLocaleDateString() });
             saveDB();
             document.getElementById('challenge-modal').classList.add('hidden');
-            showMsg("Payment Successful", `Your challenge request for Roll No ${roll} has been submitted to the administration.`);
+            showMsg("Payment Successful", `Your challenge request for Roll No ${roll} has been securely submitted to the administration.`, "fa-solid fa-check text-green-500");
         }
     </script>
 </body>
