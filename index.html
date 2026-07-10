@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academy Examination Portal</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#1E3A8A', /* Deep Navy */
+                        branddark: '#172554',
+                        accent: '#EA580C',
+                        success: '#16A34A',
+                        bglight: '#F8FAFC'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Hindi&display=swap');
+        
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: #E2E8F0; 
+            color: #1E293B; 
+        }
+        
+        .view-section { display: none; }
+        .view-section.active { display: block; animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Premium Card Styles */
+        .premium-card { 
+            background: #ffffff; 
+            border-radius: 8px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            border-top: 5px solid #1E3A8A;
+        }
+        
+        .premium-input {
+            border: 1px solid #CBD5E1;
+            border-radius: 6px;
+            padding: 10px 16px;
+            width: 100%;
+            outline: none;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .premium-input:focus { border-color: #1E3A8A; box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1); }
+        
+        .premium-btn {
+            background-color: #1E3A8A;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.2);
+        }
+        .premium-btn:hover { background-color: #172554; transform: translateY(-1px); }
+        
+        /* Official CBSE Style Certificate Design */
+        .hindi-text { font-family: 'Tiro Devanagari Hindi', serif; }
+        
+        .cbse-certificate {
+            background-color: #faf7f2; /* Old parchment color */
+            padding: 30px;
+            position: relative;
+            /* Complex border mimicking real certificates */
+            border: 2px solid #8B0000;
+            outline: 6px double #8B0000;
+            outline-offset: -12px;
+            box-shadow: inset 0 0 0 16px #faf7f2, inset 0 0 0 18px #8B0000;
+            color: #000;
+        }
+
+        .cbse-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60%;
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .cbse-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 10;
+        }
+        .cbse-table th, .cbse-table td {
+            border: 1px solid #333;
+            padding: 6px 4px;
+            text-align: center;
+        }
+        .cbse-table th {
+            text-align: center;
+            vertical-align: top;
+            padding: 8px 4px;
+        }
+        .cbse-table .text-left-col { text-align: left; padding-left: 10px; }
+        
+        .signature-line {
+            border-top: 1px solid #000;
+            width: 150px;
+            display: inline-block;
+            margin-top: 40px;
+        }
+
+        /* Print Specifics for A4 PDF Download */
+        @media print {
+            @page { size: A4; margin: 10mm; }
+            body { background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .no-print { display: none !important; }
+            .cbse-certificate { box-shadow: inset 0 0 0 16px #faf7f2, inset 0 0 0 18px #8B0000 !important; width: 100%; max-width: 100%; margin: 0; padding: 25px; }
+            header, footer, .marquee-container { display: none; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <header class="bg-brand text-white shadow-lg relative z-10">
+        <div class="max-w-7xl mx-auto px-4 py-5 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4 cursor-pointer" onclick="showView('home-view')">
+                <!-- Academic Icon instead of Emblem -->
+                <div class="bg-white text-brand p-2 rounded-lg text-3xl shadow-sm">
+                    <i class="fa-solid fa-building-columns"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-wider">APEX ACADEMY</h1>
+                    <p class="text-xs text-blue-200 font-medium tracking-widest uppercase">Central Examination Portal</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 no-print">
+                <span id="db-status" class="text-xs bg-branddark px-3 py-1.5 rounded-full font-medium border border-blue-800">System Online</span>
+                <button id="logout-btn" class="hidden text-sm bg-red-500 hover:bg-red-600 px-4 py-2 rounded-md font-bold shadow transition" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="bg-white text-brand font-medium py-2 px-4 marquee-container shadow-sm border-b border-gray-200 text-sm">
+        <marquee behavior="scroll" direction="left" scrollamount="5">
+            <span class="text-accent mr-2"><i class="fa-solid fa-bell"></i></span> 
+            LATEST NOTIFICATION: End of Session Examination Results are now LIVE. Students can download their detailed marksheets using their authorized Roll Numbers. Best of luck!
+        </marquee>
+    </div>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 mt-2">
+
+        <div id="home-view" class="view-section active w-full max-w-4xl mx-auto mt-8">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold text-gray-800">Academic Result Portal</h2>
+                <p class="text-gray-500 mt-2">Select your designated portal to continue</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Student Panel -->
+                <div class="premium-card p-8 hover:-translate-y-1 transition duration-300">
+                    <div class="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fa-solid fa-user-graduate text-4xl text-brand"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-2 text-center text-gray-800">Student Portal</h3>
+                    <p class="text-center text-gray-500 mb-8 h-12">Access your academic performance and download your official marksheet.</p>
+                    <button onclick="showView('student-search-view')" class="premium-btn w-full text-lg">Check Result <i class="fa-solid fa-arrow-right ml-2"></i></button>
+                </div>
+
+                <!-- Admin Panel -->
+                <div class="premium-card p-8 hover:-translate-y-1 transition duration-300 border-t-accent">
+                    <div class="bg-orange-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fa-solid fa-chalkboard-user text-4xl text-accent"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-2 text-center text-gray-800">Staff Login</h3>
+                    <p class="text-center text-gray-500 mb-8 h-12">Authorized faculty portal for updating marks and managing student records.</p>
+                    <button onclick="showView('teacher-login-view')" class="premium-btn w-full text-lg !bg-gray-800 hover:!bg-black">Admin Access <i class="fa-solid fa-lock ml-2"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div id="teacher-login-view" class="view-section w-full max-w-md mx-auto mt-12">
+            <div class="premium-card p-8">
+                <button onclick="showView('home-view')" class="text-gray-500 hover:text-brand mb-6 text-sm font-semibold transition"><i class="fa-solid fa-arrow-left mr-1"></i> Back</button>
+                <div class="text-center mb-8">
+                    <i class="fa-solid fa-shield-halved text-4xl text-brand mb-3"></i>
+                    <h2 class="text-2xl font-bold text-gray-800">Secure Staff Login</h2>
+                </div>
+                
+                <div id="login-error" class="hidden mb-6 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm font-medium">Invalid Username or Password!</div>
+                
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Faculty ID</label>
+                        <input type="text" id="t-user" class="premium-input bg-gray-50" placeholder="Enter Faculty ID">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Passcode</label>
+                        <input type="password" id="t-pass" class="premium-input bg-gray-50" placeholder="Enter Passcode">
+                    </div>
+                    <button onclick="handleLogin()" class="premium-btn w-full mt-4 py-3">Authenticate</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="teacher-dashboard-view" class="view-section w-full">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 border-b border-gray-300 pb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">Result Management Dashboard</h2>
+                    <p class="text-sm text-gray-500">Add subjects and upload marks to the central database.</p>
+                </div>
+            </div>
+            
+            <div class="grid lg:grid-cols-3 gap-6">
+                <!-- Manage Subjects & Add Result -->
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="premium-card p-6 border-t-gray-700">
+                        <h3 class="font-bold text-gray-800 mb-4 flex items-center"><i class="fa-solid fa-book text-gray-500 mr-2"></i> 1. Course Subjects</h3>
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" id="new-subject" class="premium-input" placeholder="Subject Name">
+                            <button onclick="addSubject()" class="premium-btn !bg-gray-800 !px-4"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <div id="subject-list" class="flex flex-wrap gap-2 text-sm mt-2"></div>
+                    </div>
+
+                    <div class="premium-card p-6 border-t-brand">
+                        <h3 class="font-bold text-gray-800 mb-4 flex items-center"><i class="fa-solid fa-file-pen text-brand mr-2"></i> 2. Upload Student Result</h3>
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500 uppercase">Roll No</label>
+                                    <input type="number" id="s-roll" class="premium-input" required>
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="text-xs font-bold text-gray-500 uppercase">Student Name</label>
+                                    <input type="text" id="s-name" class="premium-input" required>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500 uppercase">Mother's Name</label>
+                                    <input type="text" id="s-mother" class="premium-input">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500 uppercase">Father's Name</label>
+                                    <input type="text" id="s-father" class="premium-input">
+                                </div>
+                            </div>
+                            
+                            <div class="border border-blue-100 rounded-lg p-4 bg-blue-50 mt-4">
+                                <label class="text-xs font-bold text-brand uppercase mb-3 block border-b border-blue-200 pb-2">Enter Marks (Out of 100)</label>
+                                <div id="marks-inputs-container" class="space-y-3"></div>
+                            </div>
+                            
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase">Faculty Remarks</label>
+                                <input type="text" id="s-remarks" class="premium-input" placeholder="Optional notes...">
+                            </div>
+                            <button onclick="saveStudent()" class="premium-btn w-full !bg-success hover:!bg-green-700 mt-4 py-3 text-lg"><i class="fa-solid fa-cloud-arrow-up mr-2"></i> Publish Result</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Database Table -->
+                <div class="lg:col-span-2 premium-card p-6 overflow-hidden border-t-gray-400">
+                    <h3 class="font-bold text-gray-800 mb-4"><i class="fa-solid fa-database text-gray-500 mr-2"></i> Master Database Records</h3>
+                    <div class="overflow-x-auto bg-gray-50 rounded-lg border border-gray-200">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-gray-200 text-gray-700">
+                                <tr>
+                                    <th class="p-3 font-semibold">Roll No.</th>
+                                    <th class="p-3 font-semibold">Candidate Name</th>
+                                    <th class="p-3 font-semibold text-center">Score</th>
+                                    <th class="p-3 font-semibold text-center">Status</th>
+                                    <th class="p-3 font-semibold text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="student-table-body" class="divide-y divide-gray-200 bg-white"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="student-search-view" class="view-section w-full max-w-md mx-auto mt-12">
+            <div class="premium-card p-1">
+                <!-- Inner decorated border -->
+                <div class="border-2 border-dashed border-gray-200 rounded p-8 text-center bg-white m-1 relative">
+                    <button onclick="showView('home-view')" class="text-gray-400 hover:text-brand mb-6 text-sm font-semibold absolute top-4 left-4"><i class="fa-solid fa-arrow-left"></i></button>
+                    
+                    <div class="w-24 h-24 mx-auto bg-blue-50 rounded-full flex items-center justify-center mb-6 border-4 border-white shadow-md">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135810.png" alt="Student" class="w-16 h-16 opacity-80">
+                    </div>
+                    
+                    <h2 class="text-2xl font-bold text-gray-800 mb-1">Find Your Result</h2>
+                    <p class="text-sm text-gray-500 mb-8">Enter your registered Roll Number to securely access your marksheet.</p>
+                    
+                    <div class="relative mb-6">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-hashtag text-gray-400"></i>
+                        </div>
+                        <input type="number" id="search-roll" class="premium-input pl-10 text-center text-xl font-bold tracking-widest py-3" placeholder="ROLL NO" autocomplete="off">
+                    </div>
+                    
+                    <button onclick="searchResult()" class="premium-btn w-full text-lg py-3"><i class="fa-solid fa-magnifying-glass mr-2"></i> Search</button>
+                    
+                    <div id="search-error" class="hidden mt-4 bg-red-50 text-red-600 rounded p-3 text-sm font-semibold border border-red-100">
+                        <i class="fa-solid fa-circle-exclamation mr-1"></i> Record not found. Please verify your Roll Number.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="student-result-view" class="view-section w-full max-w-4xl mx-auto">
+            <div class="no-print mb-6 flex flex-col sm:flex-row justify-between gap-4">
+                <button onclick="showView('student-search-view')" class="premium-btn !bg-gray-600"><i class="fa-solid fa-arrow-left mr-2"></i> Search Another</button>
+                <button onclick="window.print()" class="premium-btn !bg-brand"><i class="fa-solid fa-file-pdf mr-2"></i> Download PDF / Print</button>
+            </div>
+
+            <div class="cbse-certificate shadow-2xl mx-auto" style="max-width: 850px;">
+                <!-- Authentic Background Emblem -->
+                <i class="fa-solid fa-building-columns cbse-watermark text-gray-300" style="font-size: 350px;"></i>
+                
+                <!-- Top Serial Info -->
+                <div class="flex justify-between text-[11px] font-bold text-red-800 mb-2 font-mono relative z-10">
+                    <div>
+                        <span>क्रम संख्या</span><br>
+                        <span>S.No. <span id="cert-sno">2026/0129</span></span>
+                    </div>
+                    <div class="text-right">
+                        <span>पंजीकरण सं.</span><br>
+                        <span>Regn.No. <span id="cert-reg">B26/15697/0230</span></span>
+                    </div>
+                </div>
+
+                <!-- Header Section -->
+                <div class="text-center mb-6 relative z-10">
+                    <i class="fa-solid fa-building-columns text-5xl mb-2 text-gray-800"></i>
+                    <h1 class="text-2xl font-black text-gray-900 hindi-text">एपेक्स अकादमी शिक्षा बोर्ड</h1>
+                    <h2 class="text-2xl font-black text-gray-900 tracking-wide uppercase mt-1">Apex Academy Board of Education</h2>
+                    
+                    <p class="text-[13px] font-bold text-gray-800 mt-3 hindi-text">अंक विवरणिका सह प्रमाण पत्र</p>
+                    <p class="text-[13px] font-bold text-gray-800 uppercase">Marks Statement Cum Certificate</p>
+                    
+                    <p class="text-sm font-bold text-gray-900 mt-2 hindi-text">सीनियर स्कूल सर्टिफिकेट परीक्षा, 2026</p>
+                    <p class="text-sm font-bold text-gray-900 uppercase">Senior School Certificate Examination, 2026</p>
+                </div>
+
+                <!-- Student Details Section -->
+                <div class="text-[12px] font-bold text-gray-900 leading-relaxed mb-4 relative z-10">
+                    <table class="w-full">
+                        <tr>
+                            <td class="w-48"><span class="hindi-text">यह प्रमाणित किया जाता है कि</span><br>This is to certify that</td>
+                            <td class="text-sm uppercase px-2"><span id="res-name">--</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="hindi-text">अनुक्रमांक</span><br>Roll No.</td>
+                            <td class="text-sm px-2" id="res-roll">--</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hindi-text">माता का नाम</span><br>Mother's Name</td>
+                            <td class="text-sm uppercase px-2"><span id="res-mother">--</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="hindi-text">पिता/संरक्षक का नाम</span><br>Father's / Guardian's Name</td>
+                            <td class="text-sm uppercase px-2"><span id="res-father">--</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="hindi-text">विद्यालय</span><br>School</td>
+                            <td class="text-sm uppercase px-2">15697 APEX ACADEMY CENTER OF EXCELLENCE PATNA BR</td>
+                        </tr>
+                    </table>
+                    <div class="mt-2"><span class="hindi-text">की शैक्षणिक उपलब्धियां निम्नानुसार हैं</span> has achieved Scholastic Achievements as under :</div>
+                </div>
+
+                <!-- Detailed Marks Table -->
+                <table class="cbse-table">
+                    <thead class="bg-[#f0ebe1]">
+                        <tr>
+                            <th rowspan="2" class="w-16"><span class="hindi-text">विषय कोड</span><br>SUB.<br>CODE</th>
+                            <th rowspan="2" class="w-48"><span class="hindi-text">विषय</span><br>SUBJECT</th>
+                            <th colspan="4"><span class="hindi-text">प्राप्तांक</span> MARKS OBTAINED</th>
+                            <th rowspan="2" class="w-20"><span class="hindi-text">स्थितीय ग्रेड</span><br>POSITIONAL<br>GRADE</th>
+                        </tr>
+                        <tr>
+                            <th class="w-16"><span class="hindi-text">लिखित</span><br>THEORY</th>
+                            <th class="w-16"><span class="hindi-text">आं.मू./IA</span><br>PR./IA</th>
+                            <th class="w-16"><span class="hindi-text">योग</span><br>TOTAL</th>
+                            <th><span class="hindi-text">योग (शब्दों में)</span><br>TOTAL (IN WORDS)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="res-subjects" class="text-gray-900 bg-white">
+                        <!-- Dynamic Content Goes Here -->
+                    </tbody>
+                    <tfoot class="bg-[#f0ebe1]">
+                        <tr>
+                            <td colspan="2" class="text-right pr-4"><span class="hindi-text">परिणाम</span> Result :</td>
+                            <td colspan="5" class="text-left-col text-sm font-black" id="res-badge">PASS</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <!-- Abbreviations / Notes -->
+                <div class="text-[9px] font-bold text-gray-700 leading-tight border border-gray-400 p-2 mb-12 relative z-10 bg-white">
+                    <span class="hindi-text">संक्षिप्तियों का अर्थ :</span> <strong>Abbreviations :</strong><br>
+                    <strong>PR:</strong> Practical, <strong>IA:</strong> Internal Assessment, <strong>AB:</strong> Absent.<br>
+                    <span class="hindi-text">परिणाम पास होने पर भी किसी विषय में फेल होने की स्थिति में, उसे कम्पार्टमेंट माना जाएगा।</span><br>
+                    In case of a candidate passing the overall examination but failing in a subject, it shall be treated as Compartment.
+                </div>
+
+                <!-- Footer Signatures -->
+                <div class="flex justify-between items-end text-[11px] font-bold text-gray-900 relative z-10">
+                    <div>
+                        <span class="hindi-text">पटना</span> Patna<br>
+                        <span class="hindi-text">दिनांक</span> Dated : <span id="res-date">10-07-2026</span>
+                    </div>
+                    <div class="text-center text-xs">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Signature_of_Rishabh_Pant.svg" class="h-10 mx-auto opacity-70 mb-1" alt="Signature">
+                        <span class="hindi-text">परीक्षा नियंत्रक</span><br>Controller of Examinations
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-gray-900 text-center text-gray-400 py-6 mt-auto no-print text-sm border-t-4 border-brand">
+        <p>&copy; 2026 Apex Academy. All Rights Reserved.</p>
+        <p class="text-xs mt-2 opacity-70">Powered by EduPortal Examination Systems</p>
+    </footer>
+
+    <script>
+        // ==========================================
+        // FIREBASE CONFIGURATION
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCvxwQuIAdr-CWbFEpIEkzLSVe9n_okOT8",
+            authDomain: "coachingresult-b2f99.firebaseapp.com",
+            databaseURL: "https://coachingresult-b2f99-default-rtdb.firebaseio.com",
+            projectId: "coachingresult-b2f99",
+            storageBucket: "coachingresult-b2f99.firebasestorage.app",
+            messagingSenderId: "38457744845",
+            appId: "1:38457744845:web:eea16e46ef02232046b884",
+            measurementId: "G-7QMET27TGY"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        let dbState = { subjects: [], students: {} };
+
+        // Realtime Listener
+        database.ref('portalData').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                dbState = data;
+                if(!dbState.subjects) dbState.subjects = [];
+                if(!dbState.students) dbState.students = {};
+            }
+            document.getElementById('db-status').innerText = "System Online";
+            document.getElementById('db-status').className = "text-xs bg-branddark text-white px-3 py-1.5 rounded-full font-medium border border-blue-800";
+            refreshDashboard();
+        });
+
+        // Save Function
+        function saveDB() {
+            document.getElementById('db-status').innerText = "Syncing...";
+            document.getElementById('db-status').className = "text-xs bg-accent text-white px-3 py-1.5 rounded-full font-medium border border-orange-700";
+            database.ref('portalData').set(dbState);
+        }
+
+        // --- NAVIGATION ---
+        function showView(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            const logoutBtn = document.getElementById('logout-btn');
+            if(viewId === 'teacher-dashboard-view') logoutBtn.classList.remove('hidden');
+            else logoutBtn.classList.add('hidden');
+        }
+
+        // --- AUTHENTICATION ---
+        function handleLogin() {
+            const user = document.getElementById('t-user').value;
+            const pass = document.getElementById('t-pass').value;
+            const err = document.getElementById('login-error');
+            if (user === 'ABC_990' && pass === '122333444455555') {
+                err.classList.add('hidden');
+                document.getElementById('t-user').value = '';
+                document.getElementById('t-pass').value = '';
+                showView('teacher-dashboard-view');
+            } else {
+                err.classList.remove('hidden');
+            }
+        }
+        function logout() { showView('home-view'); }
+
+        // --- DASHBOARD LOGIC ---
+        function addSubject() {
+            const sub = document.getElementById('new-subject').value.trim();
+            if (sub && !dbState.subjects.includes(sub)) {
+                dbState.subjects.push(sub);
+                document.getElementById('new-subject').value = '';
+                saveDB();
+            }
+        }
+        function removeSubject(sub) {
+            if(confirm(`Remove course: ${sub}?`)) {
+                dbState.subjects = dbState.subjects.filter(s => s !== sub);
+                saveDB();
+            }
+        }
+
+        function refreshDashboard() {
+            document.getElementById('subject-list').innerHTML = dbState.subjects.map(s => 
+                `<span class="bg-blue-50 text-brand px-3 py-1.5 rounded-full border border-blue-200 font-semibold flex items-center gap-2 shadow-sm">${s} <i class="fa-solid fa-xmark cursor-pointer text-red-500 hover:text-red-700 ml-1" onclick="removeSubject('${s}')"></i></span>`
+            ).join('');
+
+            const marksContainer = document.getElementById('marks-inputs-container');
+            if(dbState.subjects.length === 0) {
+                marksContainer.innerHTML = `<p class="text-sm text-gray-500 italic">Please add courses/subjects first.</p>`;
+            } else {
+                marksContainer.innerHTML = dbState.subjects.map(s => `
+                    <div class="flex justify-between items-center text-sm bg-white p-2 rounded border border-gray-200">
+                        <label class="font-semibold text-gray-700">${s}</label>
+                        <input type="number" id="mark-${s.replace(/\s+/g, '')}" class="premium-input !w-24 text-center !py-1" placeholder="0-100" max="100" min="0">
+                    </div>
+                `).join('');
+            }
+
+            const tbody = document.getElementById('student-table-body');
+            tbody.innerHTML = '';
+            Object.values(dbState.students).forEach(student => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition";
+                const statusHtml = student.status === 'Pass' 
+                    ? `<span class="bg-green-100 text-green-800 border border-green-300 px-3 py-1 text-xs font-bold rounded-full">PASS</span>` 
+                    : `<span class="bg-red-100 text-red-800 border border-red-300 px-3 py-1 text-xs font-bold rounded-full">FAIL</span>`;
+                
+                tr.innerHTML = `
+                    <td class="p-3 font-mono font-bold text-gray-600">${student.roll}</td>
+                    <td class="p-3 font-semibold">${student.name}</td>
+                    <td class="p-3 text-center font-bold text-brand">${student.percentage}%</td>
+                    <td class="p-3 text-center">${statusHtml}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteStudent('${student.roll}')" class="text-red-500 hover:text-white hover:bg-red-500 p-2 rounded transition"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function saveStudent() {
+            const roll = document.getElementById('s-roll').value;
+            const name = document.getElementById('s-name').value;
+            const mother = document.getElementById('s-mother').value || '---';
+            const father = document.getElementById('s-father').value || '---';
+            const remarks = document.getElementById('s-remarks').value || 'Nil';
+            if(!roll || !name) return alert("Roll number and Name are mandatory.");
+            if(dbState.subjects.length === 0) return alert("Please add subjects first.");
+
+            let total = 0; let subjectMarks = {}; let passedAll = true;
+            dbState.subjects.forEach(s => {
+                const val = parseInt(document.getElementById(`mark-${s.replace(/\s+/g, '')}`).value) || 0;
+                subjectMarks[s] = val; total += val;
+                if (val < 33) passedAll = false; // 33% cutoff
+            });
+
+            const maxTotal = dbState.subjects.length * 100;
+            const percentage = ((total / maxTotal) * 100).toFixed(1);
+            const status = (percentage >= 50 && passedAll) ? "Pass" : "Fail";
+
+            dbState.students[roll] = { roll, name, mother, father, remarks, subjectMarks, total, maxTotal, percentage, status };
+            
+            document.getElementById('s-roll').value = '';
+            document.getElementById('s-name').value = '';
+            document.getElementById('s-mother').value = '';
+            document.getElementById('s-father').value = '';
+            document.getElementById('s-remarks').value = '';
+            dbState.subjects.forEach(s => document.getElementById(`mark-${s.replace(/\s+/g, '')}`).value = '');
+            saveDB();
+        }
+
+        function deleteStudent(roll) {
+            if(confirm(`Permanently delete record for Roll No: ${roll}?`)) { 
+                delete dbState.students[roll]; saveDB(); 
+            }
+        }
+
+        // --- STUDENT RESULT LOGIC ---
+        function searchResult() {
+            const roll = document.getElementById('search-roll').value;
+            const err = document.getElementById('search-error');
+            if(!roll || !dbState.students[roll]) { 
+                err.classList.remove('hidden'); 
+                return; 
+            }
+            err.classList.add('hidden');
+            renderMarkSheet(dbState.students[roll]);
+            showView('student-result-view');
+        }
+
+        function renderMarkSheet(student) {
+            // Date formatting
+            const today = new Date();
+            document.getElementById('res-date').innerText = today.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+
+            // Set basic info
+            document.getElementById('res-name').innerText = student.name;
+            document.getElementById('res-roll').innerText = student.roll;
+            document.getElementById('res-mother').innerText = student.mother || '---';
+            document.getElementById('res-father').innerText = student.father || '---';
+
+            // Overall Result
+            const badge = document.getElementById('res-badge');
+            badge.innerText = student.status === 'Pass' ? 'PASS' : 'COMPARTMENT / FAIL';
+
+            // Dynamic Subject Generation for Table
+            const tbody = document.getElementById('res-subjects');
+            tbody.innerHTML = '';
+            
+            let subjectCodeCounter = 301;
+            
+            // Number to Words Converter
+            const numToWords = (num) => {
+                const a = ['','ONE ','TWO ','THREE ','FOUR ', 'FIVE ','SIX ','SEVEN ','EIGHT ','NINE ','TEN ','ELEVEN ','TWELVE ','THIRTEEN ','FOURTEEN ','FIFTEEN ','SIXTEEN ','SEVENTEEN ','EIGHTEEN ','NINETEEN '];
+                const b = ['', '', 'TWENTY','THIRTY','FORTY','FIFTY', 'SIXTY','SEVENTY','EIGHTY','NINETY'];
+                if(num === 0) return "ZERO";
+                if(num === 100) return "ONE HUNDRED";
+                if(num < 20) return a[num];
+                let tens = Math.floor(num/10);
+                let ones = num % 10;
+                return b[tens] + (ones > 0 ? " " + a[ones] : "");
+            };
+
+            // Grade Calculator
+            const getGrade = (mark) => {
+                if (mark >= 91) return 'A1';
+                if (mark >= 81) return 'A2';
+                if (mark >= 71) return 'B1';
+                if (mark >= 61) return 'B2';
+                if (mark >= 51) return 'C1';
+                if (mark >= 41) return 'C2';
+                if (mark >= 33) return 'D1';
+                return 'E';
+            };
+
+            for (const [subject, mark] of Object.entries(student.subjectMarks)) {
+                // Mock calculation for Theory and IA/Practical (Assuming Total 100)
+                let ia = mark >= 20 ? 20 : mark; // Max IA is 20
+                let theory = mark - ia;
+                let grade = getGrade(mark);
+                
+                // Format numbers to have 3 digits (e.g. 090, 070)
+                const padZero = (n) => n.toString().padStart(3, '0');
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${subjectCodeCounter}</td>
+                        <td class="text-left-col uppercase">${subject}</td>
+                        <td>${padZero(theory)}</td>
+                        <td>${padZero(ia)}</td>
+                        <td>${padZero(mark)}</td>
+                        <td class="text-left-col uppercase">${numToWords(mark)}</td>
+                        <td>${grade}</td>
+                    </tr>
+                `;
+                subjectCodeCounter += 5; // Increment fake subject code
+            }
+        }
+    </script>
+</body>
+</html>
