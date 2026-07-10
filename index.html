@@ -840,18 +840,6 @@
                 return b[tens] + (ones > 0 ? " " + a[ones] : "");
             };
 
-            // Grade Calculator
-            const getGrade = (mark) => {
-                if (mark >= 91) return 'A1';
-                if (mark >= 81) return 'A2';
-                if (mark >= 71) return 'B1';
-                if (mark >= 61) return 'B2';
-                if (mark >= 51) return 'C1';
-                if (mark >= 41) return 'C2';
-                if (mark >= 33) return 'D1';
-                return 'E';
-            };
-
             // Dynamic Grade Calculator using DB Rules
             const getGrade = (mark) => {
                 const sortedRules = [...dbState.grading].sort((a,b) => b.min - a.min);
