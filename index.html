@@ -10,10 +10,11 @@
     <!-- FontAwesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
-    <!-- Firebase Core, Database, AND Storage -->
+    <!-- Firebase Core AND Database -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <!-- jsPDF (for Re-evaluation Tickets & Receipts) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <!-- UI Configuration -->
     <script>
@@ -209,6 +210,9 @@
                 <h2 class="text-2xl font-bold text-govnavy uppercase">Master Control Panel</h2>
                 <p class="text-sm text-gray-600">Manage institution data, results, and student requests.</p>
             </div>
+
+            <!-- Quick Stats Overview -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6" id="dash-stats"></div>
             
             <!-- Tab Navigation -->
             <div class="flex flex-wrap border-b border-gray-300 mb-6 bg-white shadow-sm font-semibold text-sm">
@@ -216,6 +220,7 @@
                 <button class="tab-btn px-6 py-3 text-gray-600 uppercase" onclick="switchDashTab(event, 'tab-db')"><i class="fa-solid fa-database mr-2"></i> Master DB</button>
                 <button class="tab-btn px-6 py-3 text-gray-600 uppercase" onclick="switchDashTab(event, 'tab-notices')"><i class="fa-solid fa-cloud-arrow-up mr-2"></i> Uploads & Notices</button>
                 <button class="tab-btn px-6 py-3 text-gray-600 uppercase" onclick="switchDashTab(event, 'tab-requests')"><i class="fa-solid fa-envelope-open-text mr-2"></i> Student Requests</button>
+                <button class="tab-btn px-6 py-3 text-gray-600 uppercase" onclick="switchDashTab(event, 'tab-chat')"><i class="fa-solid fa-comments mr-2"></i> Community Chat</button>
                 <button class="tab-btn px-6 py-3 text-gray-600 uppercase" onclick="switchDashTab(event, 'tab-settings')"><i class="fa-solid fa-gear mr-2"></i> Admin Settings</button>
             </div>
 
@@ -237,7 +242,7 @@
                         <div class="card-header bg-govblue text-white"><i class="fa-solid fa-file-arrow-up mr-2"></i> 2. Candidate Data Entry</div>
                         <div class="p-6">
                             <div class="grid sm:grid-cols-2 gap-4 mb-6">
-                                <div><label class="text-xs font-bold text-gray-600 uppercase">Roll Number</label><input type="number" id="s-roll" class="official-input"></div>
+                                <div><label class="text-xs font-bold text-gray-600 uppercase">Roll Number</label><input type="text" inputmode="numeric" id="s-roll" class="official-input"></div>
                                 <div><label class="text-xs font-bold text-gray-600 uppercase">Full Name</label><input type="text" id="s-name" class="official-input"></div>
                             </div>
                             
@@ -272,7 +277,10 @@
             <!-- Tab 2: Master DB -->
             <div id="tab-db" class="dash-tab">
                 <div class="official-card">
-                    <div class="card-header"><i class="fa-solid fa-database mr-2"></i> Published Results Database</div>
+                    <div class="card-header flex justify-between items-center">
+                        <span><i class="fa-solid fa-database mr-2"></i> Published Results Database</span>
+                        <button onclick="exportStudentsCSV()" class="text-[11px] bg-govblue hover:bg-govnavy text-white px-3 py-1.5 rounded font-bold normal-case tracking-normal"><i class="fa-solid fa-file-csv mr-1"></i> Export CSV</button>
+                    </div>
                     <div class="p-4 overflow-x-auto max-h-[600px] custom-scroll">
                         <table class="official-table whitespace-nowrap">
                             <thead class="sticky top-0 z-10 shadow-sm">
@@ -345,6 +353,18 @@
                         <div class="card-header bg-yellow-50 text-yellow-800 border-b-yellow-200"><i class="fa-solid fa-trophy mr-1"></i> 90%+ Rewards</div>
                         <div class="overflow-y-auto flex-grow p-3 space-y-3 custom-scroll bg-gray-50" id="req-gifts"></div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Tab: Community Chat Moderation -->
+            <div id="tab-chat" class="dash-tab">
+                <div class="official-card">
+                    <div class="card-header bg-green-700 text-white flex justify-between items-center">
+                        <span><i class="fa-solid fa-comments mr-2"></i> Community Forum Moderation</span>
+                        <button onclick="clearAllChat()" class="text-[11px] bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded font-bold normal-case tracking-normal"><i class="fa-solid fa-trash mr-1"></i> Clear All Chats</button>
+                    </div>
+                    <p class="text-xs text-gray-600 px-4 pt-3">As a teacher, you can remove any inappropriate or off-topic message from the public Student Forum.</p>
+                    <div id="admin-chat-list" class="p-4 space-y-2 max-h-[500px] overflow-y-auto custom-scroll bg-white"></div>
                 </div>
             </div>
 
@@ -421,7 +441,7 @@
                 
                 <div class="bg-gray-50 p-6 rounded border border-gray-200 mb-6">
                     <label class="block text-left text-xs font-bold text-gray-600 uppercase mb-2">Roll Number</label>
-                    <input type="number" id="search-roll" class="official-input text-center text-xl font-bold tracking-[0.2em] py-3 mb-4" placeholder="XXXXXXXX">
+                    <input type="text" inputmode="numeric" id="search-roll" class="official-input text-center text-xl font-bold tracking-[0.2em] py-3 mb-4" placeholder="XXXXXXXX">
                     <button onclick="searchResult()" class="btn-primary w-full text-lg py-3 flex justify-center items-center gap-2">Fetch Result <i class="fa-solid fa-magnifying-glass"></i></button>
                 </div>
                 
@@ -621,15 +641,16 @@
             <div class="modal-header bg-orange-600"><span class="font-bold"><i class="fa-solid fa-headset mr-2"></i> Helpdesk Portal</span> <button onclick="closeModal('case-modal')"><i class="fa-solid fa-xmark"></i></button></div>
             
             <div class="flex border-b border-gray-200 text-sm font-bold">
-                <button id="tab-btn-raise" class="w-1/2 py-2 bg-gray-100 text-orange-600" onclick="switchCaseTab('raise')">Raise Ticket</button>
-                <button id="tab-btn-status" class="w-1/2 py-2 bg-gray-50 text-gray-500 hover:bg-gray-100" onclick="switchCaseTab('status')">Check Status</button>
+                <button id="tab-btn-raise" class="w-1/3 py-2 bg-gray-100 text-orange-600" onclick="switchCaseTab('raise')">Raise Ticket</button>
+                <button id="tab-btn-status" class="w-1/3 py-2 bg-gray-50 text-gray-500 hover:bg-gray-100" onclick="switchCaseTab('status')">Check Status</button>
+                <button id="tab-btn-reeval" class="w-1/3 py-2 bg-gray-50 text-gray-500 hover:bg-gray-100" onclick="switchCaseTab('reeval')">Track Re-eval</button>
             </div>
 
             <!-- Tab: Raise Ticket -->
             <div id="case-tab-raise" class="p-6 space-y-4 bg-gray-50">
                 <p class="text-xs text-gray-600">Report missing marks, name corrections, or portal issues to the administration.</p>
                 <input type="text" id="case-name" class="official-input text-sm" placeholder="Full Registered Name">
-                <input type="number" id="case-roll" class="official-input text-sm" placeholder="Roll Number">
+                <input type="text" inputmode="numeric" id="case-roll" class="official-input text-sm" placeholder="Roll Number">
                 <textarea id="case-msg" class="official-input text-sm h-24 resize-none" placeholder="Describe the discrepancy in detail..."></textarea>
                 <button onclick="submitCase()" class="btn-primary !bg-orange-600 hover:!bg-orange-700 w-full">Submit Ticket</button>
             </div>
@@ -640,6 +661,14 @@
                 <input type="text" id="status-ticket-id" class="official-input text-sm" placeholder="Enter Ticket ID (e.g., TKT12345)">
                 <button onclick="checkTicketStatus()" class="btn-primary !bg-gray-700 hover:!bg-gray-800 w-full">Check Status</button>
                 <div id="ticket-status-result" class="hidden mt-4 p-4 border border-gray-300 rounded text-sm bg-white shadow-inner"></div>
+            </div>
+
+            <!-- Tab: Track Re-eval (Transparency) -->
+            <div id="case-tab-reeval" class="p-6 space-y-4 bg-gray-50 hidden">
+                <p class="text-xs text-gray-600">Enter your Re-evaluation Ticket ID to see payment confirmation status, review progress, and download your receipt.</p>
+                <input type="text" id="status-reeval-id" class="official-input text-sm" placeholder="Enter Ticket ID (e.g., REV1234)">
+                <button onclick="checkReevalStatus()" class="btn-primary !bg-gray-700 hover:!bg-gray-800 w-full">Check Status</button>
+                <div id="reeval-status-result" class="hidden mt-4 p-4 border border-gray-300 rounded text-sm bg-white shadow-inner"></div>
             </div>
         </div>
     </div>
@@ -671,29 +700,31 @@
         </div>
     </div>
 
-    <!-- Challenge / Re-eval Modal (Mock Payment) -->
+    <!-- Challenge / Re-eval Modal (UPI QR Payment) -->
     <div id="challenge-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header bg-govred"><span class="font-bold"><i class="fa-solid fa-scale-balanced mr-2"></i> Re-evaluation Portal</span> <button onclick="closeModal('challenge-modal')"><i class="fa-solid fa-xmark"></i></button></div>
-            <div class="p-6 bg-gray-50">
-                <p class="text-xs text-gray-600 mb-3 border-b pb-2">Select subjects below. A non-refundable fee applies per subject. Processing takes 7-10 working days.</p>
+            <div class="p-6 bg-gray-50 max-h-[80vh] overflow-y-auto custom-scroll">
+                <p class="text-xs text-gray-600 mb-3 border-b pb-2">Select subjects below. A non-refundable fee applies per subject. <strong>Re-evaluation begins only after the administration confirms receipt of your payment.</strong></p>
                 <div id="challenge-subjects-list" class="space-y-1 mb-4 max-h-32 overflow-y-auto p-2 border border-gray-300 rounded bg-white text-sm custom-scroll"></div>
                 <div class="flex justify-between items-center py-3 border-t border-b border-gray-300 mb-4">
                     <span class="font-bold text-gray-700 text-sm uppercase">Total Payable Fee:</span>
                     <span id="challenge-total-amt" class="text-xl font-black text-govred">₹0</span>
                 </div>
                 
-                <!-- Mock Payment Gateway UI -->
+                <!-- UPI QR Payment -->
                 <div class="bg-blue-50 border border-blue-200 p-3 rounded mb-4 text-center">
-                    <p class="text-[10px] font-bold text-blue-800 uppercase mb-2">Secure Payment Gateway Simulation</p>
-                    <div class="flex justify-center gap-2 text-2xl text-gray-400 mb-2">
-                        <i class="fa-brands fa-cc-visa text-blue-700"></i>
-                        <i class="fa-brands fa-cc-mastercard text-red-600"></i>
-                        <i class="fa-solid fa-building-columns text-green-600"></i>
-                    </div>
+                    <p class="text-[10px] font-bold text-blue-800 uppercase mb-2">Scan & Pay via UPI</p>
+                    <img id="challenge-qr" src="" alt="UPI QR Code" class="w-36 h-36 mx-auto border border-gray-300 bg-white p-1 rounded mb-2">
+                    <p class="text-xs text-gray-700">UPI ID: <span class="font-mono font-bold">9905740140@fam</span></p>
+                    <p class="text-[10px] text-gray-500 mt-1">Pay the exact amount shown above, then enter your transaction reference below.</p>
                 </div>
 
-                <button id="pay-btn" onclick="processChallenge()" class="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed text-lg">Pay & Submit Request</button>
+                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase">UPI Transaction Ref / UTR No.</label>
+                <input type="text" id="challenge-utr" class="official-input mb-4 text-sm" placeholder="e.g., 402812345678">
+
+                <button id="pay-btn" onclick="processChallenge()" class="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed text-lg">I Have Paid — Submit for Verification</button>
+                <p class="text-[10px] text-gray-500 mt-2 text-center">You will receive a Ticket ID to track your re-evaluation status and download a receipt.</p>
             </div>
         </div>
     </div>
@@ -716,7 +747,6 @@
         
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        const storage = firebase.storage(); 
 
         // ==========================================
         // 2. STATE MANAGEMENT
@@ -741,6 +771,7 @@
 
         let currentStudent = null;
         let chatUserName = "";
+        let activeChallengeId = null; // Tracks which re-eval ticket is currently being evaluated by the teacher
 
         // ==========================================
         // 3. UI HELPER FUNCTIONS
@@ -889,9 +920,15 @@
             }
 
             // -- Tab 4: Requests --
-            renderRequests('challenges', 'req-challenges', 'text-govred', 'bg-red-50');
+            renderChallengesAdmin();
             renderCasesAdmin();
             renderRequests('gifts', 'req-gifts', 'text-yellow-700', 'bg-yellow-50');
+
+            // -- Community Chat Moderation --
+            renderAdminChat();
+
+            // -- Quick Stats --
+            renderStats();
 
             // -- Tab 5: Settings --
             document.getElementById('set-portal-active').checked = dbState.settings.portalActive;
@@ -952,13 +989,136 @@
             `).join('');
         }
 
-        function resolveRequest(type, id) { showConfirm("Mark this request as resolved and clear it?", () => { delete dbState[type][id]; saveDB(); }); }
+        function resolveRequest(type, id) { showConfirm("Delete this record permanently?", () => { delete dbState[type][id]; saveDB(); }); }
 
-        function evaluateChallenge(roll) {
-            switchDashTab(new Event('click'), 'tab-entry'); // Move to Entry tab
-            document.querySelector('.tab-btn[onclick*="tab-entry"]').classList.add('active'); // Update Tab UI
-            editStudent(roll); // Load student marks
-            showMsg("Evaluation Mode", `Marks for Roll ${roll} loaded. Update them and click Publish.`);
+        // -- Re-evaluation (Challenges) Admin Panel: payment-gated, transparent lifecycle --
+        function renderChallengesAdmin() {
+            const container = document.getElementById('req-challenges');
+            if(!container) return;
+            const items = dbState.challenges ? Object.values(dbState.challenges) : [];
+            if(items.length === 0) {
+                container.innerHTML = `<p class="text-xs text-center text-gray-400 py-4 italic">No pending requests.</p>`;
+                return;
+            }
+            const statusMeta = {
+                AWAITING_VERIFICATION: { label: 'Awaiting Payment Confirmation', color: 'bg-orange-100 text-orange-800 border-orange-300' },
+                PAYMENT_CONFIRMED: { label: 'Payment Confirmed — Ready for Review', color: 'bg-blue-100 text-blue-800 border-blue-300' },
+                COMPLETED: { label: 'Completed', color: 'bg-green-100 text-green-800 border-green-300' }
+            };
+            container.innerHTML = items.slice().reverse().map(req => {
+                const meta = statusMeta[req.status] || statusMeta.AWAITING_VERIFICATION;
+                return `
+                <div class="bg-red-50 p-3 rounded border border-gray-200 text-xs shadow-sm">
+                    <div class="font-bold text-govred flex justify-between items-center border-b pb-1 mb-1">
+                        <span>${req.id} | Roll: ${req.roll} | ${req.name}</span>
+                    </div>
+                    <div class="text-gray-700 font-medium mt-1">${req.details || ''}</div>
+                    <div class="text-gray-500 mt-1">Payment Ref: <span class="font-mono">${req.paymentRef || 'N/A'}</span></div>
+                    <div class="mt-2 flex flex-wrap justify-between items-center gap-2">
+                        <span class="text-[10px] font-bold px-2 py-1 rounded border ${meta.color}">${meta.label}</span>
+                        <div class="flex gap-1 items-center">
+                            ${req.status === 'AWAITING_VERIFICATION' ? `<button class="btn-primary !bg-blue-600 hover:!bg-blue-700 !px-2 !py-1 !text-[10px]" onclick="confirmChallengePayment('${req.id}')">Confirm Payment</button>` : ''}
+                            ${req.status === 'PAYMENT_CONFIRMED' ? `<button class="btn-primary !bg-govblue !px-2 !py-1 !text-[10px]" onclick="evaluateChallenge('${req.id}')">Evaluate Marks</button>` : ''}
+                            ${req.status === 'COMPLETED' ? `<button class="btn-primary !bg-gray-600 !px-2 !py-1 !text-[10px]" onclick="downloadReevalTicketPDF('${req.id}')"><i class="fa-solid fa-file-pdf mr-1"></i>Receipt</button>` : ''}
+                            <i class="fa-solid fa-trash text-red-500 hover:text-red-700 cursor-pointer" title="Delete Record" onclick="resolveRequest('challenges', '${req.id}')"></i>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function confirmChallengePayment(id) {
+            const req = dbState.challenges && dbState.challenges[id];
+            if(!req) return;
+            showConfirm(`Confirm payment of ₹${req.fee} received via UPI (Ref: ${req.paymentRef || 'N/A'})? This unlocks evaluation for the student.`, () => {
+                dbState.challenges[id].status = 'PAYMENT_CONFIRMED';
+                dbState.challenges[id].paymentConfirmedAt = new Date().toLocaleString('en-IN');
+                saveDB();
+                showMsg("Payment Confirmed", "Re-evaluation has been unlocked. You can now evaluate marks for this student from this panel.");
+            });
+        }
+
+        function evaluateChallenge(id) {
+            const req = dbState.challenges && dbState.challenges[id];
+            if(!req) return;
+            if(req.status !== 'PAYMENT_CONFIRMED') {
+                return showMsg("Payment Not Confirmed", "Please confirm payment for this ticket before starting the evaluation.", "fa-solid fa-triangle-exclamation text-orange-500");
+            }
+            activeChallengeId = id;
+            document.querySelectorAll('.dash-tab').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-entry').classList.add('active');
+            const entryTabBtn = document.querySelector('.tab-btn[onclick*="tab-entry"]');
+            if(entryTabBtn) entryTabBtn.classList.add('active');
+            editStudent(req.roll);
+            showMsg("Evaluation Mode", `Re-eval Ticket ${id}: Update marks for Roll ${req.roll} (Subjects: ${req.subjects.join(', ')}), then click "Publish Record" to complete this re-evaluation and notify the student.`);
+        }
+
+        // -- Community Chat Moderation --
+        function renderAdminChat() {
+            const container = document.getElementById('admin-chat-list');
+            if(!container) return;
+            const chats = dbState.chat || [];
+            if(chats.length === 0) { container.innerHTML = '<p class="text-xs text-gray-500 italic">No messages yet.</p>'; return; }
+            container.innerHTML = chats.map((c, idx) => `
+                <div class="flex justify-between items-start gap-2 border border-gray-200 rounded p-2 text-xs bg-gray-50">
+                    <div>
+                        <p class="font-bold text-gray-700">${c.sender} <span class="text-gray-400 font-normal">${c.time}</span></p>
+                        <p class="text-gray-800 mt-1">${c.text}</p>
+                    </div>
+                    <button onclick="deleteChatMessage(${idx})" class="text-red-500 hover:text-red-700 shrink-0" title="Delete Message"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            `).join('');
+        }
+        function deleteChatMessage(idx) {
+            showConfirm("Delete this message from the public forum?", () => {
+                dbState.chat.splice(idx, 1);
+                saveDB();
+            });
+        }
+        function clearAllChat() {
+            showConfirm("Delete ALL community chat messages? This cannot be undone.", () => {
+                dbState.chat = [];
+                saveDB();
+            });
+        }
+
+        // -- Quick Stats Overview --
+        function renderStats() {
+            const el = document.getElementById('dash-stats');
+            if(!el) return;
+            const totalStudents = Object.keys(dbState.students || {}).length;
+            const pendingReeval = Object.values(dbState.challenges || {}).filter(c => c.status !== 'COMPLETED').length;
+            const pendingTickets = Object.values(dbState.cases || {}).filter(c => c.status !== 'Resolved').length;
+            const pendingGifts = Object.keys(dbState.gifts || {}).length;
+            const totalNotices = (dbState.notices || []).length;
+            const card = (label, val, color) => `<div class="official-card p-3 text-center"><p class="text-2xl font-black ${color}">${val}</p><p class="text-[10px] uppercase font-bold text-gray-500 mt-1">${label}</p></div>`;
+            el.innerHTML = card('Total Students', totalStudents, 'text-govnavy')
+                + card('Pending Re-evals', pendingReeval, 'text-govred')
+                + card('Open Tickets', pendingTickets, 'text-orange-600')
+                + card('Reward Requests', pendingGifts, 'text-yellow-600')
+                + card('Notices Live', totalNotices, 'text-green-700');
+        }
+
+        // -- CSV Export (Master DB) --
+        function exportStudentsCSV() {
+            const students = Object.values(dbState.students || {});
+            if(students.length === 0) return showMsg("No Data", "There are no student records to export.", "fa-solid fa-triangle-exclamation text-orange-500");
+            const subjects = dbState.subjects || [];
+            const header = ['Roll', 'Name', ...subjects.map(s => s + ' (Theory)'), ...subjects.map(s => s + ' (Practical)'), 'Total', 'Max Total', 'Percentage', 'Status', 'Remarks'];
+            const rows = students.map(s => {
+                const th = subjects.map(sub => (s.subjectMarks && s.subjectMarks[sub]) ? s.subjectMarks[sub].theory : '');
+                const pr = subjects.map(sub => (s.subjectMarks && s.subjectMarks[sub]) ? s.subjectMarks[sub].practical : '');
+                return [s.roll, s.name, ...th, ...pr, s.total, s.maxTotal, s.percentage, s.status, (s.remarks || '')];
+            });
+            const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Apex_Academy_Results_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         // Subject Mgmt
@@ -1007,8 +1167,11 @@
 
             dbState.subjects.forEach(s => {
                 const id = btoa(s).replace(/=/g, '');
-                const th = parseInt(document.getElementById(`th-${id}`).value) || 0;
-                const pr = parseInt(document.getElementById(`pr-${id}`).value) || 0;
+                // Clamp marks to valid ranges to prevent corrupted totals/percentages (0-80 theory, 0-20 practical)
+                let th = parseInt(document.getElementById(`th-${id}`).value) || 0;
+                let pr = parseInt(document.getElementById(`pr-${id}`).value) || 0;
+                th = Math.max(0, Math.min(80, th));
+                pr = Math.max(0, Math.min(20, pr));
                 const totalSub = th + pr;
                 
                 subjectMarks[s] = { theory: th, practical: pr, total: totalSub, grade: getGrade(totalSub) }; 
@@ -1019,18 +1182,38 @@
             // Apply Global Moderation
             grandTotal += moderation;
             const maxTotal = dbState.subjects.length * 100;
-            if(grandTotal > maxTotal) grandTotal = maxTotal; 
+            if(grandTotal > maxTotal) grandTotal = maxTotal;
+            if(grandTotal < 0) grandTotal = 0;
 
             const percentage = ((grandTotal / maxTotal) * 100).toFixed(1);
             const status = (percentage >= 33 && passedAll) ? "PASS" : "FAIL";
 
             dbState.students[roll] = { roll, name, remarks, subjectMarks, total: grandTotal, maxTotal, percentage, status };
+
+            // If this save completes an active re-evaluation ticket, snapshot new marks & mark it COMPLETED
+            let completedChallengeId = null;
+            if(activeChallengeId && dbState.challenges && dbState.challenges[activeChallengeId] && dbState.challenges[activeChallengeId].roll === roll) {
+                const ch = dbState.challenges[activeChallengeId];
+                const newMarks = {};
+                (ch.subjects || []).forEach(s => { if(subjectMarks[s]) newMarks[s] = { ...subjectMarks[s] }; });
+                ch.newMarks = newMarks;
+                ch.status = 'COMPLETED';
+                ch.completedAt = new Date().toLocaleString('en-IN');
+                completedChallengeId = activeChallengeId;
+                activeChallengeId = null;
+            }
             
             // Clear
             document.getElementById('s-roll').value = ''; document.getElementById('s-name').value = ''; document.getElementById('s-remarks').value = '';
             dbState.subjects.forEach(s => { const id = btoa(s).replace(/=/g, ''); document.getElementById(`th-${id}`).value = ''; document.getElementById(`pr-${id}`).value = ''; });
             saveDB();
-            showMsg("Record Saved", `Result for Roll No ${roll} has been published to the Master DB.`);
+
+            if(completedChallengeId) {
+                showMsg("Record Saved & Re-evaluation Completed", `Result for Roll No ${roll} has been updated. Re-eval Ticket ${completedChallengeId} is now marked COMPLETED — the student can view the old vs. new marks and download their receipt via Helpdesk > Track Re-eval.`);
+                downloadReevalTicketPDF(completedChallengeId);
+            } else {
+                showMsg("Record Saved", `Result for Roll No ${roll} has been published to the Master DB.`);
+            }
         }
 
         function editStudent(roll) {
@@ -1275,10 +1458,12 @@
 
         // Raise Case Tabs
         function switchCaseTab(tab) {
-            document.getElementById('case-tab-raise').classList.toggle('hidden', tab !== 'raise');
-            document.getElementById('case-tab-status').classList.toggle('hidden', tab !== 'status');
-            document.getElementById('tab-btn-raise').className = tab === 'raise' ? "w-1/2 py-2 bg-gray-100 text-orange-600" : "w-1/2 py-2 bg-gray-50 text-gray-500 hover:bg-gray-100";
-            document.getElementById('tab-btn-status').className = tab === 'status' ? "w-1/2 py-2 bg-gray-100 text-orange-600" : "w-1/2 py-2 bg-gray-50 text-gray-500 hover:bg-gray-100";
+            ['raise', 'status', 'reeval'].forEach(t => {
+                document.getElementById('case-tab-' + t).classList.toggle('hidden', t !== tab);
+                document.getElementById('tab-btn-' + t).className = t === tab
+                    ? "w-1/3 py-2 bg-gray-100 text-orange-600"
+                    : "w-1/3 py-2 bg-gray-50 text-gray-500 hover:bg-gray-100";
+            });
         }
 
         function submitCase() {
@@ -1358,6 +1543,7 @@
         }
 
         // Challenge (Re-eval) Logic
+        const UPI_ID = '9905740140@fam';
         const originalOpenModal = openModal;
         openModal = function(id) {
             if(id === 'challenge-modal') {
@@ -1369,6 +1555,7 @@
                         <span class="font-bold text-gray-700">${sub}</span>
                     </label>
                 `).join('');
+                document.getElementById('challenge-utr').value = '';
                 updateChallengeTotal();
             }
             originalOpenModal(id);
@@ -1380,26 +1567,161 @@
             const total = count * fee;
             document.getElementById('challenge-total-amt').innerText = `₹${total}`;
             document.getElementById('pay-btn').disabled = count === 0;
-            document.getElementById('pay-btn').innerText = count === 0 ? 'Select Subjects First' : `Pay ₹${total} & Submit`;
+            document.getElementById('pay-btn').innerText = count === 0 ? 'Select Subjects First' : 'I Have Paid — Submit for Verification';
+
+            // Generate a real scannable UPI QR code for the exact payable amount
+            const qrImg = document.getElementById('challenge-qr');
+            if(count === 0 || !currentStudent) {
+                qrImg.src = '';
+            } else {
+                const upiUri = `upi://pay?pa=${encodeURIComponent(UPI_ID)}&pn=${encodeURIComponent('Apex Academy')}&am=${total}&cu=INR&tn=${encodeURIComponent('Reeval-' + currentStudent.roll)}`;
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiUri)}`;
+            }
         }
 
         function processChallenge() {
-            const btn = document.getElementById('pay-btn');
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Processing Secure Payment...`;
-            btn.disabled = true;
-            
-            setTimeout(() => {
-                const subs = Array.from(document.querySelectorAll('.challenge-cb:checked')).map(cb => cb.value);
-                const id = 'REV' + Math.floor(Math.random()*9000+1000);
-                if(!dbState.challenges) dbState.challenges = {};
-                
-                dbState.challenges[id] = { id, roll: currentStudent.roll, name: currentStudent.name, details: `Req: Re-evaluation for [ ${subs.join(', ')} ]` };
-                saveDB();
-                
-                closeModal('challenge-modal');
-                showMsg("Payment Successful", `Your re-evaluation request has been filed. Reference ID: ${id}`);
-                btn.innerText = 'Pay & Submit Request';
-            }, 1500);
+            const subs = Array.from(document.querySelectorAll('.challenge-cb:checked')).map(cb => cb.value);
+            if(subs.length === 0 || !currentStudent) return;
+
+            const ref = document.getElementById('challenge-utr').value.trim();
+            const fee = dbState.settings.challengeFee || 500;
+            const total = subs.length * fee;
+            const id = 'REV' + Math.floor(Math.random() * 9000 + 1000);
+
+            // Snapshot current marks for each requested subject BEFORE re-evaluation, for transparency
+            const oldMarks = {};
+            subs.forEach(s => { if(currentStudent.subjectMarks && currentStudent.subjectMarks[s]) oldMarks[s] = { ...currentStudent.subjectMarks[s] }; });
+
+            if(!dbState.challenges) dbState.challenges = {};
+            dbState.challenges[id] = {
+                id,
+                roll: currentStudent.roll,
+                name: currentStudent.name,
+                subjects: subs,
+                fee: total,
+                paymentRef: ref || 'Not provided',
+                status: 'AWAITING_VERIFICATION',
+                oldMarks,
+                newMarks: null,
+                createdAt: new Date().toLocaleString('en-IN'),
+                details: `Re-evaluation requested for [ ${subs.join(', ')} ] — Fee ₹${total} (UPI: ${UPI_ID})`
+            };
+            saveDB();
+            closeModal('challenge-modal');
+            downloadReevalTicketPDF(id);
+            showMsg("Request Submitted for Verification", `Your re-evaluation request has been filed.\n\nTicket ID: ${id}\n\nRe-evaluation will begin only after the administration confirms your payment. Track progress anytime via Helpdesk > "Track Re-eval". A ticket receipt PDF has been downloaded for your records.`);
+        }
+
+        // -- Re-evaluation Status Tracking (Student-facing transparency) --
+        function checkReevalStatus() {
+            const id = document.getElementById('status-reeval-id').value.trim();
+            const resultDiv = document.getElementById('reeval-status-result');
+
+            if(!id || !dbState.challenges || !dbState.challenges[id]) {
+                resultDiv.innerHTML = '<span class="text-red-500 font-bold"><i class="fa-solid fa-circle-xmark mr-1"></i> Invalid Ticket ID.</span>';
+                resultDiv.classList.remove('hidden');
+                return;
+            }
+
+            const req = dbState.challenges[id];
+            const order = ['AWAITING_VERIFICATION', 'PAYMENT_CONFIRMED', 'COMPLETED'];
+            const steps = [
+                { key: 'AWAITING_VERIFICATION', label: 'Payment Submitted — Awaiting Confirmation' },
+                { key: 'PAYMENT_CONFIRMED', label: 'Payment Confirmed — Under Review' },
+                { key: 'COMPLETED', label: 'Re-evaluation Completed' }
+            ];
+            const currentIdx = order.indexOf(req.status);
+
+            const timelineHtml = steps.map((s, i) => {
+                const done = i <= currentIdx;
+                return `<div class="flex items-center gap-2 mb-1"><i class="fa-solid ${done ? 'fa-circle-check text-green-600' : 'fa-circle text-gray-300'}"></i><span class="${done ? 'font-bold text-gray-800' : 'text-gray-400'}">${s.label}</span></div>`;
+            }).join('');
+
+            let footerHtml = '';
+            if(req.status === 'COMPLETED' && req.newMarks) {
+                const comparisonRows = (req.subjects || []).map(s => {
+                    const oldT = (req.oldMarks && req.oldMarks[s]) ? req.oldMarks[s].total : '--';
+                    const newT = req.newMarks[s] ? req.newMarks[s].total : '--';
+                    const changed = String(oldT) !== String(newT);
+                    return `<div class="flex justify-between text-xs py-1 border-b last:border-0"><span>${s}</span><span class="${changed ? 'font-bold text-green-700' : 'text-gray-500'}">${oldT} → ${newT}</span></div>`;
+                }).join('');
+                footerHtml = `
+                    <div class="mt-3 border-t pt-3">
+                        <p class="font-bold text-gray-700 mb-1">Marks Comparison (Old → New):</p>
+                        ${comparisonRows}
+                    </div>
+                    <button onclick="downloadReevalTicketPDF('${req.id}')" class="btn-primary w-full mt-3 !bg-green-700 hover:!bg-green-800 text-xs"><i class="fa-solid fa-file-pdf mr-1"></i> Download Final Receipt (PDF)</button>`;
+            } else {
+                footerHtml = `<button onclick="downloadReevalTicketPDF('${req.id}')" class="btn-primary w-full mt-3 !bg-gray-700 hover:!bg-gray-800 text-xs"><i class="fa-solid fa-file-pdf mr-1"></i> Download Payment Receipt (PDF)</button>`;
+            }
+
+            resultDiv.innerHTML = `
+                <div class="mb-2"><strong>Subjects:</strong> ${(req.subjects || []).join(', ')}</div>
+                <div class="mb-2"><strong>Fee Paid:</strong> ₹${req.fee}</div>
+                <div class="mb-3 border-b pb-3">${timelineHtml}</div>
+                ${footerHtml}
+            `;
+            resultDiv.classList.remove('hidden');
+        }
+
+        // -- PDF Generation: Re-evaluation Ticket / Receipt --
+        function downloadReevalTicketPDF(id) {
+            const req = dbState.challenges && dbState.challenges[id];
+            if(!req) return showMsg("Not Found", "This re-evaluation ticket could not be found.", "fa-solid fa-xmark text-red-500");
+            if(!window.jspdf) return showMsg("Error", "PDF library failed to load. Please check your internet connection.", "fa-solid fa-xmark text-red-500");
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.setFontSize(16);
+                doc.text("APEX ACADEMY", 105, 18, { align: 'center' });
+                doc.setFontSize(11);
+                doc.text("Re-evaluation Ticket & Payment Receipt", 105, 26, { align: 'center' });
+                doc.setLineWidth(0.5);
+                doc.line(15, 31, 195, 31);
+
+                let y = 42;
+                const row = (label, val) => {
+                    doc.setFont(undefined, 'bold'); doc.text(label, 15, y);
+                    doc.setFont(undefined, 'normal'); doc.text(String(val), 80, y);
+                    y += 8;
+                };
+
+                row("Ticket ID:", req.id);
+                row("Student Name:", req.name);
+                row("Roll Number:", req.roll);
+                row("Subjects:", (req.subjects || []).join(', '));
+                row("Fee Paid:", `Rs. ${req.fee}`);
+                row("Payment Mode:", `UPI (${UPI_ID})`);
+                row("Payment Ref/UTR:", req.paymentRef || 'N/A');
+                row("Request Date:", req.createdAt || '--');
+                row("Current Status:", (req.status || '').replace(/_/g, ' '));
+
+                if(req.status === 'COMPLETED' && req.newMarks) {
+                    y += 4;
+                    doc.setFont(undefined, 'bold'); doc.text("Marks Comparison (Old -> New):", 15, y);
+                    y += 8; doc.setFont(undefined, 'normal');
+                    (req.subjects || []).forEach(s => {
+                        const oldT = (req.oldMarks && req.oldMarks[s]) ? req.oldMarks[s].total : '--';
+                        const newT = req.newMarks[s] ? req.newMarks[s].total : '--';
+                        doc.text(`${s}: ${oldT} -> ${newT}`, 20, y);
+                        y += 7;
+                    });
+                    y += 4;
+                    row("Completed On:", req.completedAt || '--');
+                }
+
+                y += 10;
+                doc.setFontSize(9); doc.setTextColor(120);
+                doc.text("This is a computer-generated document issued by Apex Academy's official result portal.", 15, y);
+                doc.text("For queries, use the Helpdesk portal with the above Ticket ID.", 15, y + 5);
+
+                doc.save(`ReevalTicket_${req.id}.pdf`);
+            } catch(err) {
+                console.error(err);
+                showMsg("PDF Generation Failed", "Something went wrong while generating the PDF. Please try again.", "fa-solid fa-xmark text-red-500");
+            }
         }
 
     </script>
